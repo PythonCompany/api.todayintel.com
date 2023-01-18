@@ -79,7 +79,7 @@ class PostAction(BaseModel):
 class FeedReader(BaseModel):
     link: str
 
-class GoogleNews(BaseModel):
+class GoogleNewsAction(BaseModel):
     keyword: str
     language: str
 
@@ -112,9 +112,9 @@ async def root():
 
 #Todo Improve this
 @app.post("/google-news")
-async def root(google: GoogleNews):
-    googlenews = GoogleNews(lang=google.language, period='7d')
-    googlenews.search(google.query)
+async def root(google: GoogleNewsAction):
+    googlenews = GoogleNews(lang=""+google.language+"", period='7d')
+    googlenews.search(google.keyword)
     return {"data": {
         "keyword": google.keyword,
         "response": googlenews.results(),
