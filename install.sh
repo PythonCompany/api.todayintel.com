@@ -1,7 +1,0 @@
-su -c "apt-get update"
-su -c "python3 -m pip install --upgrade pip"
-su -c "python3 -m spacy download en_core_web_md"
-su -c "python3 -m nltk.downloader -d /usr/local/share/nltk_data punkt"
-su -c "python3 -m nltk.downloader -d /usr/local/share/nltk_data stopwords"
-su -c "python3 -m nltk.downloader -d /usr/local/share/nltk_data vader_lexicon"
-su -c "python3 -m textblob.download_corpora"

@@ -2,7 +2,7 @@ version: '3.8'
 services:
     api:
         build: .
-        image: unixdevel/nlp:v1
+        image: unixdevil/nlp:v1
         ports:
             - 8000:8000
         volumes:
