@@ -7,10 +7,11 @@ channel = connection.channel() # start a channel
 channel.queue_declare(queue='python') # Declare a queue
 #The processors
 def pdf_process_function(msg):
+    print("message")
     channel = connection.channel()  # start a channel
-    channel.queue_declare(queue='hello')  # Declare a queue
+    channel.queue_declare(queue='python')  # Declare a queue
     channel.basic_publish(exchange='',
-                          routing_key='hello',
+                          routing_key='python',
                           body='Hello CloudAMQP!')
 
 

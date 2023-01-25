@@ -1,6 +1,7 @@
 import newspaper
 import feedparser
 import spacy
+import socials
 import datetime as dt
 from markdownify import markdownify as md
 
@@ -15,6 +16,8 @@ from nltk.stem.porter import *
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from fastapi.responses import PlainTextResponse
+from seoanalyzer import analyze
+from lighthouse import LighthouseRunner
 
 stemmer = PorterStemmer()
 from nltk.stem import WordNetLemmatizer
@@ -57,6 +60,14 @@ tags_metadata = [
     {
         "name": "summarize",
         "description": "This this will summarize a piece of text",
+    },
+    {
+        "name": "seo-analyze",
+        "description": "This this will analyze a website using seo analyzer",
+    },
+    {
+        "name": "lighthouse",
+        "description": "This will generate a Lighthouse report regarding your website",
     },
 ]
 
@@ -157,6 +168,7 @@ async def root(feed: FeedReader):
     doc = nlp(crawler.text)
     sentiment = SentimentIntensityAnalyzer()
     entities = [(e.text, e.start_char, e.end_char, e.label_) for e in doc.ents]
+    social = socials.extract(feed.link).get_matches_per_platform()
 
     data = {
         "data": {
@@ -172,6 +184,7 @@ async def root(feed: FeedReader):
             "images": crawler.images,
             "entities": entities,
             "videos": crawler.movies,
+            "social": social,
             "sentiment": sentiment.polarity_scores(crawler.text)
         },
     }
@@ -222,3 +235,19 @@ async def root(summarize: SummarizeAction):
     }}
 
 
+@app.post("/seo-analyze")
+async def root(feed: FeedReader):
+    output = analyze(feed.link, follow_links=False, analyze_headings=True, analyze_extra_tags=True)
+    return {"data": {
+        "response": output,
+
+    }}
+@app.post("/lighthouse")
+async def root(feed: FeedReader):
+
+    report = LighthouseRunner(feed.link, form_factor='desktop', quiet=False).report
+
+    return {"data": {
+        "response": report,
+
+    }}
