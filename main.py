@@ -1,10 +1,11 @@
 import newspaper
 import feedparser
 import spacy
+import socials
 import datetime as dt
 from markdownify import markdownify as md
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from newspaper import Config
 from pydantic import BaseModel
@@ -12,6 +13,11 @@ from GoogleNews import GoogleNews
 from newspaper import Article
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from nltk.stem.porter import *
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
+from fastapi.responses import PlainTextResponse
+from seoanalyzer import analyze
+from lighthouse import LighthouseRunner
 
 stemmer = PorterStemmer()
 from nltk.stem import WordNetLemmatizer
@@ -24,6 +30,14 @@ now = dt.date.today()
 now = now.strftime('%m-%d-%Y')
 yesterday = dt.date.today() - dt.timedelta(days=1)
 yesterday = yesterday.strftime('%m-%d-%Y')
+
+
+from spacy.lang.en.stop_words import STOP_WORDS
+from string import punctuation
+from collections import Counter
+from heapq import nlargest
+
+from TextSummarizer import *
 
 
 tags_metadata = [
@@ -42,6 +56,18 @@ tags_metadata = [
     {
         "name": "article",
         "description": "This will extract the article from a feed and provide you with some nlp tasks",
+    },
+    {
+        "name": "summarize",
+        "description": "This this will summarize a piece of text",
+    },
+    {
+        "name": "seo-analyze",
+        "description": "This this will analyze a website using seo analyzer",
+    },
+    {
+        "name": "lighthouse",
+        "description": "This will generate a Lighthouse report regarding your website",
     },
 ]
 
@@ -74,25 +100,18 @@ app.add_middleware(
 
 class PostAction(BaseModel):
     query: str
-
-
 class FeedReader(BaseModel):
     link: str
-
 class GoogleNewsAction(BaseModel):
     keyword: str
     language: str
-
 class TwitterAction(BaseModel):
     consumer_key: str
     consumer_secret: str
     access_token: str
     access_token_secret: str
-
-
-class TranslateAction(BaseModel):
+class SummarizeAction(BaseModel):
     text: str
-    lang: str
 
 
 
@@ -142,25 +161,93 @@ async def root(feed: FeedReader):
                  'Chrome/50.0.2661.102 Safari/537.36 '
     config = Config()
     config.browser_user_agent = user_agent
-    crawler = Article(feed.link, keep_article_html=True, config=config)
+    crawler = Article(feed.link,config=config, keep_article_html=True)
     crawler.download()
     crawler.parse()
     crawler.nlp()
     doc = nlp(crawler.text)
     sentiment = SentimentIntensityAnalyzer()
     entities = [(e.text, e.start_char, e.end_char, e.label_) for e in doc.ents]
+    social = socials.extract(feed.link).get_matches_per_platform()
+
     data = {
-        "title": crawler.title,
-        "date": crawler.publish_date,
-        "text": crawler.text,
-        "markdown": md(crawler.article_html),
-        "html": crawler.article_html,
-        "summary": crawler.summary,
-        "keywords": crawler.keywords,
-        "authors": crawler.authors,
-        "images": crawler.images,
-        "entities": entities,
-        "videos": crawler.movies,
-        "sentiment": sentiment.polarity_scores(crawler.text)
+        "data": {
+            "title": crawler.title,
+            "date": crawler.publish_date,
+            "text": crawler.text,
+            "markdown": md(crawler.article_html, newline_style="BACKSLASH"),
+            "html": crawler.article_html,
+            "summary": crawler.summary,
+            "keywords": crawler.keywords,
+            "authors": crawler.authors,
+            "banner": crawler.top_image,
+            "images": crawler.images,
+            "entities": entities,
+            "videos": crawler.movies,
+            "social": social,
+            "sentiment": sentiment.polarity_scores(crawler.text)
+        },
     }
-    return {"data": data}
+    return data
+
+
+
+@app.post("/summarize")
+async def root(summarize: SummarizeAction):
+    # Counting number of words in original article
+    original_words = summarize.text.split()
+    original_words = summarize.text.split()
+    original_words = [w for w in original_words if w.isalnum()]
+    num_words_in_original_text = len(original_words)
+
+    # Converting received text into sapcy Doc object
+    text = nlp(summarize.text)
+
+    # Extracting all sentences from the text in a list
+    sentences = list(text.sents)
+    total_sentences = len(sentences)
+
+    # Generating Frequency Matrix
+    freq_matrix = frequency_matrix(sentences)
+
+    # Generating Term Frequency Matrix
+    tf_matrixx = tf_matrix(freq_matrix)
+
+    # Getting number of sentences containing a particular word
+    num_sent_per_words = sentences_per_words(freq_matrix)
+
+    # Generating ID Frequency Matrix
+    idf_matrixx = idf_matrix(freq_matrix, num_sent_per_words, total_sentences)
+
+    # Generating Tf-Idf Matrix
+    tf_idf_matrixx = tf_idf_matrix(tf_matrixx, idf_matrixx)
+
+    # Generating Sentence score for each sentence
+    sentence_scores = score_sentences(tf_idf_matrixx)
+
+    # Setting threshold to average value (You are free to play with ther values)
+    threshold = average_score(sentence_scores)
+
+    # Getting summary
+    summary = create_summary(sentences, sentence_scores, 1.3 * threshold)
+    return {"data": {
+        "response": summary,
+    }}
+
+
+@app.post("/seo-analyze")
+async def root(feed: FeedReader):
+    output = analyze(feed.link, follow_links=False, analyze_headings=True, analyze_extra_tags=True)
+    return {"data": {
+        "response": output,
+
+    }}
+@app.post("/lighthouse")
+async def root(feed: FeedReader):
+
+    report = LighthouseRunner(feed.link, form_factor='desktop', quiet=False).report
+
+    return {"data": {
+        "response": report,
+
+    }}
