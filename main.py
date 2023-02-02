@@ -4,7 +4,7 @@ import spacy
 import socials
 import datetime as dt
 from markdownify import markdownify as md
-
+from feedfinder2 import find_feeds
 from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from newspaper import Config
@@ -52,6 +52,10 @@ tags_metadata = [
     {
         "name": "feed-reader",
         "description": "This will extract the latest entries from a feed",
+    },
+    {
+        "name": "feed-finder",
+        "description": "This will try to find the feeds associated with a domain",
     },
     {
         "name": "article",
@@ -140,9 +144,6 @@ async def root(google: GoogleNewsAction):
     }}
 
 
-"""Article Extract"""
-
-
 @app.post("/feed-reader")
 async def root(feed: FeedReader):
     response = feedparser.parse(feed.link)
@@ -154,7 +155,14 @@ async def root(feed: FeedReader):
         },
 
     }}
+@app.post("/feed-finder")
+async def root(feed: FeedReader):
+    response = find_feeds(feed.link)
+    return {"data": {
+        "feed-link": feed.link,
+        "response": response,
 
+    }}
 @app.post("/article")
 async def root(feed: FeedReader):
     user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) ' \
