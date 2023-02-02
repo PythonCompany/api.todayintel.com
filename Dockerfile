@@ -1,18 +1,21 @@
 FROM python:3.10
 RUN apt update
+RUN apt install curl
 WORKDIR /app/
 ADD requirements.txt /app/
 ADD . /app/
 RUN apt install chromium -y
-RUN su -c "apt-get install curl"
+
 #RUN su -c "apt install chromium -y"
 RUN su -c "curl -s https://deb.nodesource.com/setup_16.x | bash"
 RUN su -c "apt install nodejs -y"
 RUN su -c "npm install -g lighthouse"
 RUN su -c "pip3 install git+https://github.com/unixdevil/lighthouse-python.git#egg=lighthouse"
+RUN su -c "pip3 install html5lib"
 RUN su -c "pip3 install hypercorn"
 RUN su -c "pip3 install google-search-results"
 RUN su -c "pip3 install socials"
+RUN su -c "pip3 install feedfinder2"
 RUN su -c "pip3 install pika"
 RUN su -c "pip3 install pyseoanalyzer"
 RUN su -c "pip3 install email-validator"
