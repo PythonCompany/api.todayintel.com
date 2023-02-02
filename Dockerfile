@@ -1,6 +1,6 @@
 FROM python:3.10
 RUN apt update
-RUN apt install curl
+RUN apt install curl -y
 WORKDIR /app/
 ADD requirements.txt /app/
 ADD . /app/
