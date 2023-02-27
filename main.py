@@ -4,6 +4,12 @@ import spacy
 import socials
 import datetime as dt
 from markdownify import markdownify as md
+
+
+import tomd
+import pypandoc
+
+
 from feedfinder2 import find_feeds
 from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -178,12 +184,14 @@ async def root(feed: FeedReader):
     entities = [(e.text, e.start_char, e.end_char, e.label_) for e in doc.ents]
     social = socials.extract(feed.link).get_matches_per_platform()
 
+
     data = {
         "data": {
             "title": crawler.title,
             "date": crawler.publish_date,
             "text": crawler.text,
-            "markdown": md(crawler.article_html, newline_style="BACKSLASH"),
+            # "markdown": md(crawler.article_html, newline_style="BACKSLASH", strip=['a'], heading_style="ATX"),
+            "markdown" : tomd.convert(crawler.article_html),
             "html": crawler.article_html,
             "summary": crawler.summary,
             "keywords": crawler.keywords,
@@ -238,6 +246,7 @@ async def root(summarize: SummarizeAction):
 
     # Getting summary
     summary = create_summary(sentences, sentence_scores, 1.3 * threshold)
+    
     return {"data": {
         "response": summary,
     }}
@@ -250,6 +259,8 @@ async def root(feed: FeedReader):
         "response": output,
 
     }}
+
+
 @app.post("/lighthouse")
 async def root(feed: FeedReader):
 
