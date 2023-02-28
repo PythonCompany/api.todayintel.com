@@ -32,4 +32,4 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            unixdevil/nlp:v1
+            cornatul/nlp:v1
