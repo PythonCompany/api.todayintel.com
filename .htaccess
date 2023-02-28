@@ -1,3 +1,8 @@
+### Rewrite Rules Added by CyberPanel Rewrite Rule Generator
+
+RewriteEngine On
 RewriteCond %{HTTPS} !=on
 RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
-REWRITERULE ^(.*)$ https://dockerbackend/$1 [P]
+REWRITERULE ^(.*)$ HTTP://dockerbackend/$1 [P]
+
+### End CyberPanel Generated Rules.
