@@ -3,6 +3,8 @@ services:
     api:
         build: .
         image: cornatul/nlp:v1
+        deploy:
+          replicas: 5
         ports:
             - 8000:8000
         volumes:
