@@ -1,13 +1,29 @@
-version: '3.3'
+version: '3'
+
 services:
-    api:
-        build: .
-        image: cornatul/nlp:v1
-        deploy:
-          replicas: 5
-        ports:
-            - 8000:8000
-        volumes:
-            - type: bind
-              source: .
-              target: /app/
+  traefik:
+    image: traefik:v2.3
+    restart: always
+    command:
+      - --accesslog
+      - --api.insecure=true
+      - --providers.docker
+      - --providers.docker.exposedbydefault=false
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "8000:80"
+      - "8080:8080"
+
+  nlpservice:
+    image: cornatul/nlp:v1
+    restart: always
+    deploy:
+      replicas: 2
+    environment:
+      - APP_PORT=8000
+    expose:
+      - 8000
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.nlpservice.rule=Host(`localhost`)
