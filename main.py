@@ -33,6 +33,17 @@ yesterday = dt.date.today() - dt.timedelta(days=1)
 yesterday = yesterday.strftime('%m-%d-%Y')
 
 from classes.TextSummarizer import *
+from decouple import config
+
+import tweepy
+from decouple import config
+
+# Twitter trends
+auth = tweepy.OAuthHandler(config("TWITTER_CONSUMER_KEY"), config("TWITTER_CONSUMER_SECRET"))
+auth.set_access_token(config("TWITTER_ACCESS_TOKEN"), config("TWITTER_ACCESS_TOKEN_SECRET"))
+api = tweepy.API(auth)
+
+WOEID = config("TWITTER_LOCATION_ID")
 
 
 tags_metadata = [
@@ -128,11 +139,15 @@ async def root():
 
     google_trends = pytrends.realtime_trending_searches(pn='GB')
     trends = pytrends.realtime_trending_searches(pn='GB')
+
+    twitter_trends = api.get_place_trends(WOEID)
+
     return {
 
             "data": {
                 "newspaper": newspaper_hot_trends,
-                "google": trends["title"].tolist()
+                "google": trends["title"].tolist(),
+                "twitter": twitter_trends,
             }
     }
 
