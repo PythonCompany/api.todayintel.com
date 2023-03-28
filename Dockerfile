@@ -14,6 +14,7 @@ RUN su -c "pip3 install git+https://github.com/unixdevil/lighthouse-python.git#e
 RUN su -c "pip3 install html5lib"
 RUN su -c "pip3 install tomd"
 RUN su -c "pip3 install pandoc"
+RUN su -c "pip3 install pytrends"
 RUN su -c "pip3 install pypandoc"
 RUN su -c "pip3 install hypercorn"
 RUN su -c "pip3 install google-search-results"

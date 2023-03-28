@@ -2,16 +2,14 @@ import newspaper
 import feedparser
 import spacy
 import socials
+from pytrends.request import TrendReq
+pytrends = TrendReq(hl='en-GB', tz=360)
+
 import datetime as dt
 from markdownify import markdownify as md
 
-
-import tomd
-import pypandoc
-
-
 from feedfinder2 import find_feeds
-from fastapi import FastAPI, Response
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from newspaper import Config
 from pydantic import BaseModel
@@ -19,9 +17,6 @@ from GoogleNews import GoogleNews
 from newspaper import Article
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from nltk.stem.porter import *
-from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse
-from fastapi.responses import PlainTextResponse
 from seoanalyzer import analyze
 from lighthouse import LighthouseRunner
 
@@ -37,13 +32,7 @@ now = now.strftime('%m-%d-%Y')
 yesterday = dt.date.today() - dt.timedelta(days=1)
 yesterday = yesterday.strftime('%m-%d-%Y')
 
-
-from spacy.lang.en.stop_words import STOP_WORDS
-from string import punctuation
-from collections import Counter
-from heapq import nlargest
-
-from TextSummarizer import *
+from classes.TextSummarizer import *
 
 
 tags_metadata = [
@@ -134,9 +123,18 @@ async def root():
 
 @app.get("/trending-terms")
 async def root():
-    return {"data": {
-        "response": newspaper.hot(),
-    }}
+
+    newspaper_hot_trends = newspaper.hot()
+
+    google_trends = pytrends.realtime_trending_searches(pn='GB')
+    trends = pytrends.realtime_trending_searches(pn='GB')
+    return {
+
+            "data": {
+                "newspaper": newspaper_hot_trends,
+                "google": trends["title"].tolist()
+            }
+    }
 
 
 #Todo Improve this
@@ -144,6 +142,7 @@ async def root():
 async def root(google: GoogleNewsAction):
     googlenews = GoogleNews(lang=""+google.language+"", period='7d')
     googlenews.search(google.keyword)
+
     return {"data": {
         "keyword": google.keyword,
         "response": googlenews.results(),
