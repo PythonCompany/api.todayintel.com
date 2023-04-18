@@ -22,8 +22,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 import time
 
-username = "nomaxvalue"                # Enter in your email for Instagram inside the quotation marks
-mypassword = "garcelino87#"             # Enter in your password for Instagram inside the quotation marks
+username = ""                # Enter in your email for Instagram inside the quotation marks
+mypassword = ""             # Enter in your password for Instagram inside the quotation marks
 friendusernames = ["alina_kiss_aa"]      # Enter in the username of the recipient inside the quotation marks! To send this to mutiple users, seperate users by commas! Ex)  friendusernames = ["@friend1", "@friend2", "@friend3"]
 numoftimes = "1"             # Enter in the number of times you would like to send the message to the recipient Ex) "2"
 
