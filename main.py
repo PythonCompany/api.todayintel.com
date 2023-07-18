@@ -3,6 +3,7 @@ import feedparser
 import spacy
 import socials
 from pytrends.request import TrendReq
+
 pytrends = TrendReq(hl='en-GB', tz=360)
 
 import datetime as dt
@@ -39,12 +40,6 @@ import tweepy
 from decouple import config
 
 # Twitter trends
-auth = tweepy.OAuthHandler(config("TWITTER_CONSUMER_KEY"), config("TWITTER_CONSUMER_SECRET"))
-auth.set_access_token(config("TWITTER_ACCESS_TOKEN"), config("TWITTER_ACCESS_TOKEN_SECRET"))
-api = tweepy.API(auth)
-
-WOEID = config("TWITTER_LOCATION_ID")
-
 
 tags_metadata = [
     {
@@ -81,7 +76,6 @@ tags_metadata = [
     },
 ]
 
-
 app = FastAPI(
     title="NLP App",
     description="This is a NLP app that allows you the user to perform simple nlp tasks",
@@ -110,19 +104,26 @@ app.add_middleware(
 
 class PostAction(BaseModel):
     query: str
+
+
 class FeedReader(BaseModel):
     link: str
+
+
 class GoogleNewsAction(BaseModel):
     keyword: str
     language: str
+
+
 class TwitterAction(BaseModel):
     consumer_key: str
     consumer_secret: str
     access_token: str
     access_token_secret: str
+
+
 class SummarizeAction(BaseModel):
     text: str
-
 
 
 @app.get("/")
@@ -134,28 +135,22 @@ async def root():
 
 @app.get("/trending-terms")
 async def root():
-
     newspaper_hot_trends = newspaper.hot()
-
-    google_trends = pytrends.realtime_trending_searches(pn='GB')
     trends = pytrends.realtime_trending_searches(pn='GB')
-
-    twitter_trends = api.get_place_trends(WOEID)
 
     return {
 
-            "data": {
-                "newspaper": newspaper_hot_trends,
-                "google": trends["title"].tolist(),
-                "twitter": twitter_trends,
-            }
+        "data": {
+            "newspaper": newspaper_hot_trends,
+            "google": trends["title"].tolist(),
+        }
     }
 
 
-#Todo Improve this
+# Todo Improve this
 @app.post("/google-news")
 async def root(google: GoogleNewsAction):
-    googlenews = GoogleNews(lang=""+google.language+"", period='7d')
+    googlenews = GoogleNews(lang="" + google.language + "", period='7d')
     googlenews.search(google.keyword)
 
     return {"data": {
@@ -175,6 +170,8 @@ async def root(feed: FeedReader):
         },
 
     }}
+
+
 @app.post("/feed-finder")
 async def root(feed: FeedReader):
     response = find_feeds(feed.link)
@@ -183,13 +180,15 @@ async def root(feed: FeedReader):
         "response": response,
 
     }}
+
+
 @app.post("/article")
 async def root(feed: FeedReader):
     user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) ' \
                  'Chrome/50.0.2661.102 Safari/537.36 '
     config = Config()
     config.browser_user_agent = user_agent
-    crawler = Article(feed.link,config=config, keep_article_html=True)
+    crawler = Article(feed.link, config=config, keep_article_html=True)
     crawler.download()
     crawler.parse()
     crawler.nlp()
@@ -197,7 +196,6 @@ async def root(feed: FeedReader):
     sentiment = SentimentIntensityAnalyzer()
     entities = [(e.text, e.start_char, e.end_char, e.label_) for e in doc.ents]
     social = socials.extract(feed.link).get_matches_per_platform()
-
 
     data = {
         "data": {
@@ -220,11 +218,9 @@ async def root(feed: FeedReader):
     return data
 
 
-
 @app.post("/summarize")
 async def root(summarize: SummarizeAction):
     # Counting number of words in original article
-    original_words = summarize.text.split()
     original_words = summarize.text.split()
     original_words = [w for w in original_words if w.isalnum()]
     num_words_in_original_text = len(original_words)
@@ -259,7 +255,7 @@ async def root(summarize: SummarizeAction):
 
     # Getting summary
     summary = create_summary(sentences, sentence_scores, 1.3 * threshold)
-    
+
     return {"data": {
         "response": summary,
     }}
@@ -276,7 +272,6 @@ async def root(feed: FeedReader):
 
 @app.post("/lighthouse")
 async def root(feed: FeedReader):
-
     report = LighthouseRunner(feed.link, form_factor='desktop', quiet=False).report
 
     return {"data": {
