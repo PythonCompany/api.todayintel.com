@@ -4,13 +4,12 @@ RUN apt install curl -y
 WORKDIR /app/
 ADD requirements.txt /app/
 ADD . /app/
-RUN apt install chromium -y
-
-#RUN su -c "apt install chromium -y"
 RUN su -c "curl -s https://deb.nodesource.com/setup_16.x | bash"
 RUN su -c "apt install nodejs -y"
+RUN su -c "apt install npm -y"
 RUN su -c "npm install -g lighthouse"
-RUN su -c "pip3 install git+https://github.com/unixdevil/lighthouse-python.git#egg=lighthouse"
+RUN su -c "apt install chromium -y"
+RUN su -c "pip3 install git+https://github.com/Cornatul/lighthouse-python.git#egg=lighthouse"
 RUN su -c "pip3 install html5lib"
 RUN su -c "pip3 install tomd"
 RUN su -c "pip3 install pandoc"
