@@ -20,6 +20,7 @@ from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from nltk.stem.porter import *
 from seoanalyzer import analyze
 from lighthouse import LighthouseRunner
+from classes.Bard import Chatbot
 
 stemmer = PorterStemmer()
 from nltk.stem import WordNetLemmatizer
@@ -74,6 +75,10 @@ tags_metadata = [
         "name": "lighthouse",
         "description": "This will generate a Lighthouse report regarding your website",
     },
+    {
+        "name": "askBard",
+        "description": "This will use google bard to answer questions you may have. This is still under construction",
+    },
 ]
 
 app = FastAPI(
@@ -115,6 +120,13 @@ class GoogleNewsAction(BaseModel):
     language: str
 
 
+class BardAuth(BaseModel):
+    session_id: str
+    message: str
+
+
+
+
 class TwitterAction(BaseModel):
     consumer_key: str
     consumer_secret: str
@@ -147,7 +159,6 @@ async def root():
     }
 
 
-# Todo Improve this
 @app.post("/google-news")
 async def root(google: GoogleNewsAction):
     googlenews = GoogleNews(lang="" + google.language + "", period='7d')
@@ -276,5 +287,16 @@ async def root(feed: FeedReader):
 
     return {"data": {
         "response": report,
+    }}
 
+
+@app.post("/askBard")
+async def ask(message: BardAuth):
+    # Execute your code without authenticating the resource
+    chatbot = Chatbot(message.session_id)
+    response = chatbot.ask(message.message)
+    return {"data": {
+        "session": message.session_id,
+        "message": message.message,
+        "response": response,
     }}
