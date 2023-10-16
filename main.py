@@ -26,6 +26,7 @@ stemmer = PorterStemmer()
 from nltk.stem import WordNetLemmatizer
 
 wordnet_lemmatizer = WordNetLemmatizer()
+from spacy import displacy
 
 nlp = spacy.load("en_core_web_md")
 
@@ -204,6 +205,7 @@ async def root(feed: FeedReader):
     crawler.parse()
     crawler.nlp()
     doc = nlp(crawler.text)
+    #@todo: add more socials displacy.serve(doc, style="ent") to the return
     sentiment = SentimentIntensityAnalyzer()
     entities = [(e.text, e.start_char, e.end_char, e.label_) for e in doc.ents]
     social = socials.extract(feed.link).get_matches_per_platform()
@@ -223,6 +225,7 @@ async def root(feed: FeedReader):
             "entities": entities,
             "videos": crawler.movies,
             "social": social,
+            "spacy": displacy.render(doc, style="ent"),
             "sentiment": sentiment.polarity_scores(crawler.text)
         },
     }
