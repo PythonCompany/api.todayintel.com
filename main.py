@@ -49,51 +49,44 @@ from decouple import config
 
 tags_metadata = [
     {
-        "name": "Trending Terms",
+        "name": "Get Trending Terms",
         "description": "This will show you the trending terms in the newspapers across the world",
     },
     {
-        "name": "9 Gag Trending terms",
-        "description": "This allows the user to get the meme trends ",
-    },
-    {
-        "name": "Get google news ",
-        "description": "This will print you the past 7 days news for a keyword and a certain language ",
+        "name": "Find Google News ",
+        "description": "This will find google news for a certain topic in the past x days news for a keyword and a "
+                       "certain language ",
     },
     {
         "name": "Feed reader",
         "description": "This will extract the latest entries from a feed",
     },
     {
-        "name": "feed-finder",
+        "name": "Feed Finder",
         "description": "This will try to find the feeds associated with a domain",
     },
     {
-        "name": "article",
-        "description": "This will extract the article from a feed and provide you with some nlp tasks",
+        "name": "Get article",
+        "description": "This will extract the full article from a link and provide you with some nlp information",
     },
     {
-        "name": "summarize",
+        "name": "Summarize Text",
         "description": "This this will summarize a piece of text",
     },
     {
-        "name": "seo-analyze",
+        "name": "Seo analyze",
         "description": "This this will analyze a website using seo analyzer",
     },
     {
-        "name": "lighthouse",
+        "name": "Get Lighthouse Analysis",
         "description": "This will generate a Lighthouse report regarding your website",
-    },
-    {
-        "name": "askBard",
-        "description": "This will use google bard to answer questions you may have. This is still under construction",
     },
 ]
 
 app = FastAPI(
     title="NLP App",
     description="This is a NLP app that allows you the user to perform simple nlp tasks",
-    version="1.0",
+    version="1.1",
     terms_of_service="https://nlpapi.org/terms/",
     contact={
         "name": "Stefan I",
@@ -114,7 +107,6 @@ app.add_middleware(
     allow_headers=["*"],
     allow_credentials=True,
 )
-
 
 class PostAction(BaseModel):
     query: str
@@ -164,14 +156,6 @@ async def root():
         "data": {
             "newspaper": newspaper_hot_trends,
             "google": trends["title"].tolist(),
-        }
-    }
-
-@app.get("/9-gag")
-async def root():
-    return {
-
-        "data": {
         }
     }
 
@@ -306,16 +290,4 @@ async def root(feed: FeedReader):
 
     return {"data": {
         "response": report,
-    }}
-
-
-@app.post("/askBard")
-async def ask(message: BardAuth):
-    # Execute your code without authenticating the resource
-    chatbot = Chatbot(message.session_id)
-    response = chatbot.ask(message.message)
-    return {"data": {
-        "session": message.session_id,
-        "message": message.message,
-        "response": response,
     }}

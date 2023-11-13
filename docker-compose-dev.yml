@@ -1,8 +1,8 @@
 version: '3.8'
 services:
-    api:
-        build: .
+    nlp:
         image: cornatul/nlp:v1
+        container_name: nlp
         ports:
             - 8000:8000
         volumes:

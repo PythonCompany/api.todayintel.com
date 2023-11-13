@@ -48,5 +48,4 @@ RUN su -c "python3 -m spacy download en_core_web_md"
 RUN su -c "python3 -m textblob.download_corpora"
 
 EXPOSE 8000
-CMD [ "python", "./rabbitmq.py"]
 CMD ["hypercorn", "main:app", "-b", "0.0.0.0:8000", "--reload"]
