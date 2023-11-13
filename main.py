@@ -214,7 +214,7 @@ async def root(feed: FeedReader):
     doc = nlp(crawler.text)
 
     sentiment = SentimentIntensityAnalyzer()
-    entities = [(e.text, e.start_char, e.end_char, e.label_) for e in doc.ents]
+    entities = [(e.text, e.start_char, e.end_char, e.label_, e.kb_id_, e._.dbpedia_raw_result['@similarityScore']) for e in doc.ents]
 
     social = socials.extract(feed.link).get_matches_per_platform()
 
