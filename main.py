@@ -208,13 +208,22 @@ async def root(feed: FeedReader):
     crawler = Article(feed.link, config=config, keep_article_html=True)
     crawler.download()
     crawler.parse()
+    # Basic NLP using NTLK
     crawler.nlp()
-
-    nlp.add_pipe('dbpedia_spotlight')
+    # New NLP
     doc = nlp(crawler.text)
 
     sentiment = SentimentIntensityAnalyzer()
-    entities = [(e.text, e.start_char, e.end_char, e.label_, e.kb_id_, e._.dbpedia_raw_result['@similarityScore']) for e in doc.ents]
+
+    remove_entities = ["TIME", "DATE", "CARDINAL", "LANGUAGE", "PERCENT", "MONEY", "QUANTITY", "ORDINAL", "CARDINAL"]
+
+    entities = [(e.label_, e.text, e.start_char, e.end_char) for e in doc.ents]
+
+    filtered_entities = [ent for ent in entities if ent[0] not in remove_entities]
+
+    unique_values = set()
+
+    filtered_entities_unique = [ent for ent in filtered_entities if ent[1] not in unique_values and not unique_values.add(ent[1])]
 
     social = socials.extract(feed.link).get_matches_per_platform()
 
@@ -230,7 +239,7 @@ async def root(feed: FeedReader):
             "authors": crawler.authors,
             "banner": crawler.top_image,
             "images": crawler.images,
-            "entities": entities,
+            "entities": filtered_entities_unique,
             "videos": crawler.movies,
             "social": social,
             "spacy": displacy.render(doc, style="ent"),
