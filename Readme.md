@@ -2,6 +2,5 @@
 
 Work in progress
 
-## Bard Google
-@todo add a how to use
-you will need to set the __Secure-1PSID that can be obtained from Google cookies
+## Build
+We are using a Make file for running the app and building the docker image

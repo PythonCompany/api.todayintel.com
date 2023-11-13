@@ -9,6 +9,10 @@ pytrends = TrendReq(hl='en-GB', tz=360)
 import datetime as dt
 from markdownify import markdownify as md
 
+
+from selenium import webdriver
+
+
 from feedfinder2 import find_feeds
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -45,15 +49,19 @@ from decouple import config
 
 tags_metadata = [
     {
-        "name": "trending-terms",
+        "name": "Trending Terms",
         "description": "This will show you the trending terms in the newspapers across the world",
     },
     {
-        "name": "google-news",
+        "name": "9 Gag Trending terms",
+        "description": "This allows the user to get the meme trends ",
+    },
+    {
+        "name": "Get google news ",
         "description": "This will print you the past 7 days news for a keyword and a certain language ",
     },
     {
-        "name": "feed-reader",
+        "name": "Feed reader",
         "description": "This will extract the latest entries from a feed",
     },
     {
@@ -156,6 +164,14 @@ async def root():
         "data": {
             "newspaper": newspaper_hot_trends,
             "google": trends["title"].tolist(),
+        }
+    }
+
+@app.get("/9-gag")
+async def root():
+    return {
+
+        "data": {
         }
     }
 
