@@ -4,6 +4,8 @@ import spacy
 import socials
 from pytrends.request import TrendReq
 
+from spacy_html_tokenizer import create_html_tokenizer
+
 pytrends = TrendReq(hl='en-GB', tz=360)
 
 import datetime as dt
@@ -33,6 +35,8 @@ wordnet_lemmatizer = WordNetLemmatizer()
 from spacy import displacy
 
 nlp = spacy.load("en_core_web_md")
+
+
 
 now = dt.date.today()
 now = now.strftime('%m-%d-%Y')
@@ -196,6 +200,7 @@ async def root(feed: FeedReader):
 
 @app.post("/article")
 async def root(feed: FeedReader):
+
     user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) ' \
                  'Chrome/50.0.2661.102 Safari/537.36 '
     config = Config()
@@ -204,10 +209,13 @@ async def root(feed: FeedReader):
     crawler.download()
     crawler.parse()
     crawler.nlp()
+
+    nlp.add_pipe('dbpedia_spotlight')
     doc = nlp(crawler.text)
-    #@todo: add more socials displacy.serve(doc, style="ent") to the return
+
     sentiment = SentimentIntensityAnalyzer()
     entities = [(e.text, e.start_char, e.end_char, e.label_) for e in doc.ents]
+
     social = socials.extract(feed.link).get_matches_per_platform()
 
     data = {
@@ -226,7 +234,7 @@ async def root(feed: FeedReader):
             "videos": crawler.movies,
             "social": social,
             "spacy": displacy.render(doc, style="ent"),
-            "sentiment": sentiment.polarity_scores(crawler.text)
+            "sentiment": sentiment.polarity_scores(crawler.text),
         },
     }
     return data

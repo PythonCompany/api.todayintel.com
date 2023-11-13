@@ -12,3 +12,5 @@ stop:
 	docker-compose down
 ssh:
 	docker exec -it nlp /bin/bash
+publish:
+	docker push cornatul/nlp:v1
