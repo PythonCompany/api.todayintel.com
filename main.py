@@ -166,13 +166,10 @@ async def root():
 
 @app.post("/google-news")
 async def root(google: GoogleNewsAction):
-    googlenews = GoogleNews(lang="" + google.language + "", period='7d')
+    googlenews = GoogleNews(lang="" + google.language + "", period='1d')
     googlenews.search(google.keyword)
 
-    return {"data": {
-        "keyword": google.keyword,
-        "response": googlenews.results(),
-    }}
+    return {"data": googlenews.results()}
 
 
 @app.post("/feed-reader")
