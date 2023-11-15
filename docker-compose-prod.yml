@@ -1,7 +1,21 @@
 version: '3'
 
 services:
-  nlpservice:
+  traefik:
+    image: traefik:v2.3
+    restart: always
+    command:
+      - --accesslog
+      - --api.insecure=true
+      - --providers.docker
+      - --providers.docker.exposedbydefault=false
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "8000:80"
+      - "8080:8080"
+
+  nlp:
     image: cornatul/nlp:v1
     container_name: nlp
     restart: always
@@ -13,4 +27,4 @@ services:
       - 8000
     labels:
       - traefik.enable=true
-      - traefik.http.routers.nlpservice.rule=Host(`v1.nlpapi.org`)
+      - traefik.http.routers.nlpservice.rule=Host(`api.todayintel.com`)
