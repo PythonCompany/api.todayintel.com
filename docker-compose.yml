@@ -1,9 +1,10 @@
 version: '3'
 
 services:
-  nlpservice:
+  nlp:
     build: .
     image: cornatul/nlp:v1
+    container_name: nlp
     restart: always
     ports:
       - "8000:8000"
