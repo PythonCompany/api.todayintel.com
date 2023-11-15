@@ -33,10 +33,11 @@ jobs:
           push: true
           tags: |
             cornatul/nlp:v1
-      -
-        name: Docker Hub Description
-        uses: peter-evans/dockerhub-description@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
-          repository: peterevans/dockerhub-description
+#      -
+#        name: Docker Hub Description
+#        uses: peter-evans/dockerhub-description@v3
+#        with:
+#          username: ${{ secrets.DOCKERHUB_USERNAME }}
+#          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+#          readme-filepath: ./Readme.md
+#          repository: peterevans/dockerhub-description
