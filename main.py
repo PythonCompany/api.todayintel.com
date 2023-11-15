@@ -135,6 +135,9 @@ class GoogleNewsAction(BaseModel):
     keyword: str
 
 
+class VideosAction(BaseModel):
+    keyword: str
+
 class BardAuth(BaseModel):
     session_id: str
     message: str
@@ -155,9 +158,7 @@ class SummarizeAction(BaseModel):
 
 @app.get("/")
 async def root():
-    return {"data": {
-        "response": "Welcome to the NLP API - for documentation please visit /docs for ",
-    }}
+    return {"data": "Welcome to the NLP API - for documentation please visit /docs for "}
 
 
 @app.get("/trending-terms")
@@ -170,7 +171,7 @@ async def root():
     merged_trends.extend(newspaper_hot_trends)
     merged_trends.extend(trends)
 
-    original_dict= {
+    original_dict = {
         "data": merged_trends,
         "newspaper": newspaper_hot_trends,
         "google": trends
@@ -246,7 +247,7 @@ async def root(feed: FeedReader):
 
     social = socials.extract(feed.link).get_matches_per_platform()
 
-    data = {
+    return {
         "data": {
             "title": crawler.title,
             "date": crawler.publish_date,
@@ -265,7 +266,6 @@ async def root(feed: FeedReader):
             "sentiment": sentiment.polarity_scores(crawler.text),
         },
     }
-    return data
 
 
 @app.post("/summarize")
@@ -306,24 +306,23 @@ async def root(summarize: SummarizeAction):
     # Getting summary
     summary = create_summary(sentences, sentence_scores, 1.3 * threshold)
 
-    return {"data": {
-        "response": summary,
-    }}
+    return {"data": summary}
 
 
 @app.post("/seo-analyze")
 async def root(feed: FeedReader):
     output = analyze(feed.link, follow_links=False, analyze_headings=True, analyze_extra_tags=True)
-    return {"data": {
-        "response": output,
-
-    }}
+    return {"data":output}
 
 
 @app.post("/lighthouse")
 async def root(feed: FeedReader):
     report = LighthouseRunner(feed.link, form_factor='desktop', quiet=False).report
+    return {"data": report}
 
-    return {"data": {
-        "response": report,
-    }}
+@app.post("/videos")
+async def root(post: VideosAction):
+    from youtube_search import YoutubeSearch
+    results = YoutubeSearch(post.keyword, max_results=10)
+
+    return {"data": results}
