@@ -163,14 +163,27 @@ async def root():
 @app.get("/trending-terms")
 async def root():
     newspaper_hot_trends = newspaper.hot()
-    trends = pytrends.realtime_trending_searches(pn='GB')
+
+    trends = pytrends.realtime_trending_searches(pn='GB')['entityNames']
+
     merged_trends = []
     merged_trends.extend(newspaper_hot_trends)
     merged_trends.extend(trends)
 
-    return {
-        "data": merged_trends
+    original_dict= {
+        "data": merged_trends,
+        "newspaper": newspaper_hot_trends,
+        "google": trends
     }
+    unique_data_list = []
+
+    for item in original_dict["data"]:
+        if isinstance(item, list):
+            unique_data_list.extend(set(item))
+        else:
+            unique_data_list.append(item)
+
+    return {"data": list(set(unique_data_list))}
 
 
 @app.post("/google-news")
