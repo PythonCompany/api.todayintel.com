@@ -1,0 +1,16 @@
+version: '3'
+
+services:
+  nlpservice:
+    image: cornatul/nlp:v1
+    container_name: nlp
+    restart: always
+    deploy:
+      replicas: 3
+    environment:
+      - APP_PORT=8000
+    expose:
+      - 8000
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.nlpservice.rule=Host(`v1.nlpapi.org`)
