@@ -120,7 +120,7 @@ class MyJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, datetime):
             return obj.isoformat()
-        return super().default(obj)
+        return super(MyJSONEncoder, self).default(obj)
 
 
 class PostAction(BaseModel):
@@ -191,8 +191,11 @@ async def root():
 async def root(google: GoogleNewsAction):
     googlenews = GoogleNews(lang="en_gb", period='1d')
     googlenews.search(google.keyword)
-    results = json.dumps(googlenews.results(sort=True), cls=MyJSONEncoder)
-    return {"data": results}
+    results = googlenews.results(sort=True)
+
+    # Convert the results to a Python dictionary
+    results_dict = json.loads(json.dumps(results, cls=MyJSONEncoder))
+    return {"data": results_dict}
 
 
 @app.post("/feed-reader")
