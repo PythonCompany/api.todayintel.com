@@ -1,8 +1,13 @@
 import newspaper
+
+
 import feedparser
+import json
 import spacy
 import socials
 from pytrends.request import TrendReq
+from datetime import datetime
+
 
 from spacy_html_tokenizer import create_html_tokenizer
 
@@ -23,13 +28,14 @@ from pydantic import BaseModel
 from GoogleNews import GoogleNews
 from newspaper import Article
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
-from nltk.stem.porter import *
+from nltk.stem import *
 from seoanalyzer import analyze
 from lighthouse import LighthouseRunner
 from classes.Bard import Chatbot
 
+from threading import Lock
+
 stemmer = PorterStemmer()
-from nltk.stem import WordNetLemmatizer
 
 wordnet_lemmatizer = WordNetLemmatizer()
 from spacy import displacy
@@ -81,20 +87,16 @@ tags_metadata = [
         "name": "Seo analyze",
         "description": "This this will analyze a website using seo analyzer",
     },
-    {
-        "name": "Get Lighthouse Analysis",
-        "description": "This will generate a Lighthouse report regarding your website",
-    },
 ]
 
 app = FastAPI(
     title="NLP App",
     description="This is a NLP app that allows you the user to perform simple nlp tasks",
     version="1.1",
-    terms_of_service="https://nlpapi.org/terms/",
+    terms_of_service="https://todayintel.com/terms/",
     contact={
-        "name": "Stefan I",
-        "url": "https://lzomedia.com/",
+        "name": "Laravel Developer",
+        "url": "https://LzoMedia.com/",
         "email": "stefan@LzoMedia.com",
     },
     license_info={
@@ -104,6 +106,8 @@ app = FastAPI(
     openapi_tags=tags_metadata
 )
 
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -111,6 +115,13 @@ app.add_middleware(
     allow_headers=["*"],
     allow_credentials=True,
 )
+
+class MyJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        return super().default(obj)
+
 
 class PostAction(BaseModel):
     query: str
@@ -122,7 +133,6 @@ class FeedReader(BaseModel):
 
 class GoogleNewsAction(BaseModel):
     keyword: str
-    language: str
 
 
 class BardAuth(BaseModel):
@@ -146,7 +156,7 @@ class SummarizeAction(BaseModel):
 @app.get("/")
 async def root():
     return {"data": {
-        "response": "Welcome to the NLP Api - for documentation please visit /docs ",
+        "response": "Welcome to the NLP API - for documentation please visit /docs for ",
     }}
 
 
@@ -154,22 +164,21 @@ async def root():
 async def root():
     newspaper_hot_trends = newspaper.hot()
     trends = pytrends.realtime_trending_searches(pn='GB')
+    merged_trends = []
+    merged_trends.extend(newspaper_hot_trends)
+    merged_trends.extend(trends)
 
     return {
-
-        "data": {
-            "newspaper": newspaper_hot_trends,
-            "google": trends["title"].tolist(),
-        }
+        "data": merged_trends
     }
 
 
 @app.post("/google-news")
 async def root(google: GoogleNewsAction):
-    googlenews = GoogleNews(lang="" + google.language + "", period='2d')
+    googlenews = GoogleNews(lang="en_gb", period='1d')
     googlenews.search(google.keyword)
-
-    return {"data": googlenews.results(sort=True)}
+    results = json.dumps(googlenews.results(sort=True), cls=MyJSONEncoder)
+    return {"data": results}
 
 
 @app.post("/feed-reader")
