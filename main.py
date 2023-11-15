@@ -1,25 +1,17 @@
 import newspaper
-
-
 import feedparser
 import json
 import spacy
 import socials
+import tweepy
+import datetime as dt
+
 from pytrends.request import TrendReq
 from datetime import datetime
-
-
 from spacy_html_tokenizer import create_html_tokenizer
-
-pytrends = TrendReq(hl='en-GB', tz=360)
-
-import datetime as dt
+from cachetools import TTLCache
 from markdownify import markdownify as md
-
-
 from selenium import webdriver
-
-
 from feedfinder2 import find_feeds
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -32,30 +24,19 @@ from nltk.stem import *
 from seoanalyzer import analyze
 from lighthouse import LighthouseRunner
 from classes.Bard import Chatbot
-
-from threading import Lock
-
-stemmer = PorterStemmer()
-
-wordnet_lemmatizer = WordNetLemmatizer()
 from spacy import displacy
+from threading import Lock
+from classes.TextSummarizer import *
+from decouple import config
 
+pytrends = TrendReq(hl='en-GB', tz=360)
+stemmer = PorterStemmer()
+wordnet_lemmatizer = WordNetLemmatizer()
 nlp = spacy.load("en_core_web_md")
-
-
-
 now = dt.date.today()
 now = now.strftime('%m-%d-%Y')
 yesterday = dt.date.today() - dt.timedelta(days=1)
 yesterday = yesterday.strftime('%m-%d-%Y')
-
-from classes.TextSummarizer import *
-from decouple import config
-
-import tweepy
-from decouple import config
-
-# Twitter trends
 
 tags_metadata = [
     {
@@ -87,6 +68,10 @@ tags_metadata = [
         "name": "Seo analyze",
         "description": "This this will analyze a website using seo analyzer",
     },
+    {
+        "name": "Search Video",
+        "description": "Given a keyword will search for youtube videos ",
+    },
 ]
 
 app = FastAPI(
@@ -106,8 +91,6 @@ app = FastAPI(
     openapi_tags=tags_metadata
 )
 
-
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -116,11 +99,15 @@ app.add_middleware(
     allow_credentials=True,
 )
 
+# Cache Settings
+cache = TTLCache(maxsize=100, ttl=6 * 60 * 60)
+
+
 class MyJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, datetime):
             return obj.isoformat()
-        return super().default(obj)
+        return super(MyJSONEncoder, self).default(obj)
 
 
 class PostAction(BaseModel):
@@ -138,11 +125,10 @@ class GoogleNewsAction(BaseModel):
 class VideosAction(BaseModel):
     keyword: str
 
+
 class BardAuth(BaseModel):
     session_id: str
     message: str
-
-
 
 
 class TwitterAction(BaseModel):
@@ -187,12 +173,24 @@ async def root():
     return {"data": list(set(unique_data_list))}
 
 
+# Introducing cache
 @app.post("/google-news")
 async def root(google: GoogleNewsAction):
+    keyword = google.keyword
+    cached_result = cache.get(keyword)
+    if cached_result:
+        return {"data": cached_result}
+
     googlenews = GoogleNews(lang="en_gb", period='1d')
-    googlenews.search(google.keyword)
-    results = json.dumps(googlenews.results(sort=True), cls=MyJSONEncoder)
-    return {"data": results}
+    googlenews.search(keyword)
+    results = googlenews.results(sort=True)
+
+    # Convert the results to a Python dictionary
+    results_dict = json.loads(json.dumps(results, cls=MyJSONEncoder))
+    # Cache the result with the specified keyword
+    cache[keyword] = results_dict
+
+    return {"data": results_dict}
 
 
 @app.post("/feed-reader")
@@ -220,7 +218,6 @@ async def root(feed: FeedReader):
 
 @app.post("/article")
 async def root(feed: FeedReader):
-
     user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) ' \
                  'Chrome/50.0.2661.102 Safari/537.36 '
     config = Config()
@@ -243,7 +240,8 @@ async def root(feed: FeedReader):
 
     unique_values = set()
 
-    filtered_entities_unique = [ent for ent in filtered_entities if ent[1] not in unique_values and not unique_values.add(ent[1])]
+    filtered_entities_unique = [ent for ent in filtered_entities if
+                                ent[1] not in unique_values and not unique_values.add(ent[1])]
 
     social = socials.extract(feed.link).get_matches_per_platform()
 
@@ -312,13 +310,14 @@ async def root(summarize: SummarizeAction):
 @app.post("/seo-analyze")
 async def root(feed: FeedReader):
     output = analyze(feed.link, follow_links=False, analyze_headings=True, analyze_extra_tags=True)
-    return {"data":output}
+    return {"data": output}
 
 
 @app.post("/lighthouse")
 async def root(feed: FeedReader):
     report = LighthouseRunner(feed.link, form_factor='desktop', quiet=False).report
     return {"data": report}
+
 
 @app.post("/videos")
 async def root(post: VideosAction):

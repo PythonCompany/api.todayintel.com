@@ -32,5 +32,6 @@ spacy-dbpedia-spotlight~=0.2.6
 nltk~=3.8.1
 textblob~=0.17.1
 youtube-search~=2.1.2
+cachetools~=5.3.2
 
 
