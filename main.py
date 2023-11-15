@@ -100,7 +100,7 @@ app.add_middleware(
 )
 
 # Cache Settings
-cache = TTLCache(maxsize=100, ttl=3 * 60 * 60)
+cache = TTLCache(maxsize=100, ttl=6 * 60 * 60)
 
 
 class MyJSONEncoder(json.JSONEncoder):
