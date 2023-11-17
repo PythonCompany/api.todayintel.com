@@ -5,6 +5,8 @@ import spacy
 import socials
 import tweepy
 import datetime as dt
+import asyncio
+import os
 
 from pytrends.request import TrendReq
 from datetime import datetime
@@ -18,6 +20,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from newspaper import Config
 from pydantic import BaseModel
 from GoogleNews import GoogleNews
+from gnews import GNews
 from newspaper import Article
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from nltk.stem import *
@@ -28,6 +31,7 @@ from spacy import displacy
 from threading import Lock
 from classes.TextSummarizer import *
 from decouple import config
+from TikTokApi import TikTokApi
 
 pytrends = TrendReq(hl='en-GB', tz=360)
 stemmer = PorterStemmer()
@@ -47,6 +51,10 @@ tags_metadata = [
         "name": "Find Google News ",
         "description": "This will find google news for a certain topic in the past x days news for a keyword and a "
                        "certain language ",
+    },
+    {
+        "name": "Find news",
+        "description": "This will extract the latest news by topic",
     },
     {
         "name": "Feed reader",
@@ -99,8 +107,18 @@ app.add_middleware(
     allow_credentials=True,
 )
 
+
+# TikTok Function
+
+async def get_hashtag_videos(token):
+    async with TikTokApi() as api:
+        await api.create_sessions(ms_tokens=token, num_sessions=1, sleep_after=3)
+        tag = api.hashtag(name="funny")
+        return tag.videos(count=30)
+
+
 # Cache Settings
-cache = TTLCache(maxsize=100, ttl=6 * 60 * 60)
+cache = TTLCache(maxsize=500, ttl=6 * 60 * 60)
 
 
 class MyJSONEncoder(json.JSONEncoder):
@@ -124,6 +142,16 @@ class GoogleNewsAction(BaseModel):
 
 class VideosAction(BaseModel):
     keyword: str
+
+
+# WORLD, NATION, BUSINESS, TECHNOLOGY, ENTERTAINMENT, SPORTS, SCIENCE, HEALTH.
+
+class FindNewsAction(BaseModel):
+    topic: str
+
+
+class TikTokAction(BaseModel):
+    token: str
 
 
 class BardAuth(BaseModel):
@@ -180,7 +208,8 @@ async def root(google: GoogleNewsAction):
     cached_result = cache.get(keyword)
     if cached_result:
         return {"data": cached_result}
-
+    google_news = GNews()
+    resultsnew = google_news.get_news(keyword)
     googlenews = GoogleNews(lang="en_gb", period='1d')
     googlenews.search(keyword)
     results = googlenews.results(sort=True)
@@ -189,6 +218,21 @@ async def root(google: GoogleNewsAction):
     results_dict = json.loads(json.dumps(results, cls=MyJSONEncoder))
     # Cache the result with the specified keyword
     cache[keyword] = results_dict
+
+    return {"data": resultsnew}
+
+
+@app.post("/find-news")
+async def root(find: FindNewsAction):
+    cached_result = cache.get(find.topic)
+    if cached_result:
+        return {"data": cached_result}
+    google_news = GNews()
+    google_news.period = '1d'
+    google_news.max_results = 15
+    google_news.country = 'United Kingdom'
+    results_dict = google_news.get_news(find.topic)
+    cache[find.topic] = results_dict
 
     return {"data": results_dict}
 
@@ -323,5 +367,16 @@ async def root(feed: FeedReader):
 async def root(post: VideosAction):
     from youtube_search import YoutubeSearch
     results = YoutubeSearch(post.keyword, max_results=10)
-
     return {"data": results}
+
+
+@app.post("/tiktok")
+async def tiktok(post: TikTokAction):
+    results = await get_hashtag_videos(post.token)
+    return {"data": results}
+
+
+if __name__ == "__main__":
+    # Create and run the event loop
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(tiktok())

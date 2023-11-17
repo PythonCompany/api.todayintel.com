@@ -5,10 +5,20 @@
 # like we would install this system on our laptop.
 
 FROM python:3.10
+LABEL maintainer="Stefan <stefan@lzomedia.com>"
 RUN apt update
 RUN apt install curl -y
-RUN su -c "pip install --upgrade pip"
+RUN apt install net-tools -y
+SHELL ["/bin/bash", "--login", "-c"]
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | bash
+RUN nvm install 18.14
+RUN node --version
+RUN apt install npm -y
+
+RUN pip install --upgrade pip
 RUN apt install software-properties-common -y
+RUN apt install openjdk-17-jdk -y
+RUN java --version
 
 # Customization
 RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/v1.1.5/zsh-in-docker.sh)" -- \
@@ -23,10 +33,6 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
 
 
 #LightHouse
-RUN su -c "curl -s https://deb.nodesource.com/setup_16.x | bash"
-RUN su -c "apt install nodejs -y"
-RUN su -c "apt install npm -y"
-RUN su -c "apt install net-tools -y"
 RUN su -c "npm install -g lighthouse"
 RUN su -c "apt install chromium -y"
 RUN su -c "pip3 install git+https://github.com/Cornatul/lighthouse-python.git#egg=lighthouse"
@@ -41,10 +47,9 @@ RUN pip install --no-cache-dir --upgrade -r /app/requirements.txt
 COPY . .
 
 
-#Custom Stuff
-RUN su -c "pip3 install gnews"
-RUN su -c "pip3 install hypercorn"
+# Install some other packages and download the models
 RUN su -c "pip3 install uvicorn"
+RUN su -c "pip3 install gnews"
 RUN su -c "python3 -m nltk.downloader -d /usr/local/share/nltk_data punkt"
 RUN su -c "python3 -m nltk.downloader -d /usr/local/share/nltk_data stopwords"
 RUN su -c "python3 -m nltk.downloader -d /usr/local/share/nltk_data vader_lexicon"
@@ -53,6 +58,6 @@ RUN su -c "python3 -m textblob.download_corpora"
 
 ADD . /app/
 
-LABEL maintainer="Stefan <stefan@lzomedia.com>"
+
 EXPOSE 8000
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
