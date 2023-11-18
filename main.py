@@ -401,26 +401,16 @@ async def tiktok(post: TikTokAction):
     return {"data": results}
 
 
-
 @app.post("/run-scrapper")
 def run_cli(scrapper: ScrapperAction):
+    # Replace 'your_cli_command' with the actual command you want to run
+    result = subprocess.run(['java -jar ./app/skrapper/cli/target/cli.jar instagram /explore/tags/memes -t json'],
+                            capture_output=True, text=True, check=True)
 
-    try:
-        # Replace 'your_cli_command' with the actual command you want to run
-        result = subprocess.run(['java -jar ./app/skrapper/cli/target/cli.jar instagram /explore/tags/memes -t json'], capture_output=True, text=True, check=True)
+    # Access the output of the command
+    output = result.stdout
+    return {"data": output}
 
-        # Access the output of the command
-        output = result.stdout
-
-        return PlainTextResponse(content=output, status_code=200)
-
-    except subprocess.CalledProcessError as e:
-        # Handle the case when the command returns a non-zero exit code
-        return PlainTextResponse(content=f"Error: {e.stderr}", status_code=500)
-
-    except Exception as e:
-        # Handle other exceptions
-        return PlainTextResponse(content=f"Error: {str(e)}", status_code=500)
 
 if __name__ == "__main__":
     # Create and run the event loop
