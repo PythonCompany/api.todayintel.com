@@ -41,17 +41,13 @@ import kotlin.text.Charsets.UTF_8
 fun main(args: Array<String>) = mainBody(columns = 100) {
     val parsedArgs = ArgParser(args = args.ifEmpty { arrayOf("--help") }).parseInto(::Args)
 
-    log { "$toolName started" }
-
     val posts = runBlocking {
-        ProgressBar(with(t) { yellow("Fetching posts") }, parsedArgs.limit.toLong()).use { pb ->
+
             parsedArgs
                 .skraper
                 .getPosts("/${parsedArgs.path.removePrefix("/")}")
                 .take(parsedArgs.limit)
-                .onEach { pb.step() }
                 .toList()
-        }
     }
 
     when {
@@ -59,7 +55,6 @@ fun main(args: Array<String>) = mainBody(columns = 100) {
         else -> posts.persistMeta(parsedArgs)
     }
 
-    log { "$toolName finished" }
 }
 
 private fun List<Post>.persistMedia(parsedArgs: Args) {
@@ -121,7 +116,7 @@ private fun List<Post>.persistMeta(parsedArgs: Args) {
         .apply { parentFile.mkdirs() }
         .writeText(text = content, charset = UTF_8)
 
-    log { "Data has been written to ${cyan(fileToWrite.path)}" }
+    log { "${cyan(fileToWrite.path)}" }
 }
 
 private fun extractCurrentVersion(): String? {
@@ -133,7 +128,7 @@ private fun extractCurrentVersion(): String? {
 }
 
 private val toolName get() = with(t) {
-    "${green("Skraper")}${extractCurrentVersion()?.let { " ${magenta(it)}" }.orEmpty()}"
+    "${green("Scraper")}${extractCurrentVersion()?.let { " ${magenta(it)}" }.orEmpty()}"
 }
 
 private inline fun log(msg: TermColors.() -> String) = with(t) {
