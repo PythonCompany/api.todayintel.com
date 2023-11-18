@@ -24,6 +24,8 @@ from gnews import GNews
 from newspaper import Article
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from nltk.stem import *
+from nltk.corpus import wordnet
+
 from seoanalyzer import analyze
 from lighthouse import LighthouseRunner
 from classes.Bard import Chatbot
@@ -108,7 +110,16 @@ app.add_middleware(
 )
 
 
-# TikTok Function
+# Related Functions
+def are_words_related(word1, word2):
+    # Get synsets (sets of synonyms) for each word
+    synsets1 = wordnet.synsets(word1)
+    synsets2 = wordnet.synsets(word2)
+
+    # Check if there is any common synset between the two words
+    common_synsets = set(synsets1).intersection(synsets2)
+
+    return len(common_synsets) > 0
 
 async def get_hashtag_videos(token):
     async with TikTokApi() as api:
@@ -197,8 +208,9 @@ async def root():
             unique_data_list.extend(set(item))
         else:
             unique_data_list.append(item)
+    keywords = list(set(unique_data_list))
 
-    return {"data": list(set(unique_data_list))}
+    return {"data": keywords}
 
 
 # Introducing cache
