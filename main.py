@@ -7,6 +7,7 @@ import tweepy
 import datetime as dt
 import asyncio
 import os
+import subprocess
 
 from pytrends.request import TrendReq
 from datetime import datetime
@@ -16,6 +17,8 @@ from markdownify import markdownify as md
 from selenium import webdriver
 from feedfinder2 import find_feeds
 from fastapi import FastAPI
+from fastapi.responses import PlainTextResponse
+
 from fastapi.middleware.cors import CORSMiddleware
 from newspaper import Config
 from pydantic import BaseModel
@@ -82,6 +85,10 @@ tags_metadata = [
         "name": "Search Video",
         "description": "Given a keyword will search for youtube videos ",
     },
+    {
+        "name": "TikTok Videos Trending",
+        "description": "Get the last 7 days trending hashtags",
+    },
 ]
 
 app = FastAPI(
@@ -120,6 +127,7 @@ def are_words_related(word1, word2):
     common_synsets = set(synsets1).intersection(synsets2)
 
     return len(common_synsets) > 0
+
 
 async def get_hashtag_videos(token):
     async with TikTokApi() as api:
@@ -163,6 +171,11 @@ class FindNewsAction(BaseModel):
 
 class TikTokAction(BaseModel):
     token: str
+
+
+class ScrapperAction(BaseModel):
+    network: str
+    what: str
 
 
 class BardAuth(BaseModel):
@@ -387,6 +400,27 @@ async def tiktok(post: TikTokAction):
     results = await get_hashtag_videos(post.token)
     return {"data": results}
 
+
+
+@app.post("/run-scrapper")
+def run_cli(scrapper: ScrapperAction):
+
+    try:
+        # Replace 'your_cli_command' with the actual command you want to run
+        result = subprocess.run(['java -jar ./app/skrapper/cli/target/cli.jar instagram /explore/tags/memes -t json'], capture_output=True, text=True, check=True)
+
+        # Access the output of the command
+        output = result.stdout
+
+        return PlainTextResponse(content=output, status_code=200)
+
+    except subprocess.CalledProcessError as e:
+        # Handle the case when the command returns a non-zero exit code
+        return PlainTextResponse(content=f"Error: {e.stderr}", status_code=500)
+
+    except Exception as e:
+        # Handle other exceptions
+        return PlainTextResponse(content=f"Error: {str(e)}", status_code=500)
 
 if __name__ == "__main__":
     # Create and run the event loop
