@@ -155,6 +155,10 @@ class FeedReader(BaseModel):
     link: str
 
 
+class SeoAnalise(BaseModel):
+    link: str
+    format: str
+
 class GoogleNewsAction(BaseModel):
     keyword: str
 
@@ -377,9 +381,20 @@ async def root(summarize: SummarizeAction):
 
 
 @app.post("/seo-analyze")
-async def root(feed: FeedReader):
-    output = analyze(feed.link, follow_links=False, analyze_headings=True, analyze_extra_tags=True)
-    return {"data": output}
+async def root(data: SeoAnalise):
+    import inspect
+    module_path = os.path.dirname(inspect.getfile(analyze))
+    response = analyze(data.link, follow_links=False, analyze_headings=True, analyze_extra_tags=True)
+    if data.format == 'html':
+        from jinja2 import Environment
+        from jinja2 import FileSystemLoader
+        env = Environment(loader=FileSystemLoader(os.path.join(module_path, 'templates')))
+        template = env.get_template('index.html')
+        output = template.render(result=response)
+        return output
+    else:
+        output = response
+        return {"data": output}
 
 
 @app.post("/lighthouse")
@@ -404,7 +419,7 @@ async def tiktok(post: TikTokAction):
 @app.post("/run-scrapper")
 def run_cli(scrapper: ScrapperAction):
     # Replace 'your_cli_command' with the actual command you want to run
-    result = subprocess.run(['java -jar ./app/skrapper/cli/target/cli.jar instagram /explore/tags/memes -t json'],
+    result = subprocess.run(['./skrapper/skraper instagram /explore/tags/memes -t json'],
                             capture_output=True, text=True, check=True)
 
     # Access the output of the command
