@@ -7,6 +7,7 @@ import tweepy
 import datetime as dt
 import asyncio
 import os
+import subprocess
 
 from pytrends.request import TrendReq
 from datetime import datetime
@@ -16,6 +17,8 @@ from markdownify import markdownify as md
 from selenium import webdriver
 from feedfinder2 import find_feeds
 from fastapi import FastAPI
+from fastapi.responses import PlainTextResponse
+
 from fastapi.middleware.cors import CORSMiddleware
 from newspaper import Config
 from pydantic import BaseModel
@@ -82,6 +85,10 @@ tags_metadata = [
         "name": "Search Video",
         "description": "Given a keyword will search for youtube videos ",
     },
+    {
+        "name": "TikTok Videos Trending",
+        "description": "Get the last 7 days trending hashtags",
+    },
 ]
 
 app = FastAPI(
@@ -121,6 +128,7 @@ def are_words_related(word1, word2):
 
     return len(common_synsets) > 0
 
+
 async def get_hashtag_videos(token):
     async with TikTokApi() as api:
         await api.create_sessions(ms_tokens=token, num_sessions=1, sleep_after=3)
@@ -147,6 +155,10 @@ class FeedReader(BaseModel):
     link: str
 
 
+class SeoAnalise(BaseModel):
+    link: str
+    format: str
+
 class GoogleNewsAction(BaseModel):
     keyword: str
 
@@ -163,6 +175,11 @@ class FindNewsAction(BaseModel):
 
 class TikTokAction(BaseModel):
     token: str
+
+
+class ScrapperAction(BaseModel):
+    network: str
+    what: str
 
 
 class BardAuth(BaseModel):
@@ -364,9 +381,20 @@ async def root(summarize: SummarizeAction):
 
 
 @app.post("/seo-analyze")
-async def root(feed: FeedReader):
-    output = analyze(feed.link, follow_links=False, analyze_headings=True, analyze_extra_tags=True)
-    return {"data": output}
+async def root(data: SeoAnalise):
+    import inspect
+    module_path = os.path.dirname(inspect.getfile(analyze))
+    response = analyze(data.link, follow_links=False, analyze_headings=True, analyze_extra_tags=True)
+    if data.format == 'html':
+        from jinja2 import Environment
+        from jinja2 import FileSystemLoader
+        env = Environment(loader=FileSystemLoader(os.path.join(module_path, 'templates')))
+        template = env.get_template('index.html')
+        output = template.render(result=response)
+        return output
+    else:
+        output = response
+        return {"data": output}
 
 
 @app.post("/lighthouse")
@@ -386,6 +414,17 @@ async def root(post: VideosAction):
 async def tiktok(post: TikTokAction):
     results = await get_hashtag_videos(post.token)
     return {"data": results}
+
+
+@app.post("/run-scrapper")
+def run_cli(scrapper: ScrapperAction):
+    # Replace 'your_cli_command' with the actual command you want to run
+    result = subprocess.run(['./skrapper/skraper instagram /explore/tags/memes -t json'],
+                            capture_output=True, text=True, check=True)
+
+    # Access the output of the command
+    output = result.stdout
+    return {"data": output}
 
 
 if __name__ == "__main__":
