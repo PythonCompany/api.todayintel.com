@@ -159,6 +159,7 @@ class SeoAnalise(BaseModel):
     link: str
     format: str
 
+
 class GoogleNewsAction(BaseModel):
     keyword: str
 
