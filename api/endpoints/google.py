@@ -81,7 +81,7 @@ async def root(cache: TTLCache = Depends(lambda: trending_terms_cache)):
 
     return {"data": keywords}
 
-
+# Start the cache for the Google News API
 google_news_cache = TTLCache(maxsize=1000, ttl=6 * 60 * 60)
 
 
@@ -110,6 +110,8 @@ def _decode_google_news_url(url: str) -> str:
     decoded_text = base64.urlsafe_b64decode(encoded_text)
 
     match = _DECODED_URL_RE.match(decoded_text)
+    print (match)
+
     primary_url = match.groupdict()["primary_url"]  # type: ignore
     primary_url = primary_url.decode()
     return primary_url
@@ -142,7 +144,7 @@ async def root(google: GoogleAction):
 
 google_topic_cache = TTLCache(maxsize=1000, ttl=6 * 60 * 60)
 
-
+# Topics available: WORLD, NATION, BUSINESS, TECHNOLOGY, ENTERTAINMENT, SPORTS, SCIENCE, HEALTH.
 @router.post("/google-news-topic")
 async def root(google: GoogleAction):
     cached_result = google_topic_cache.get(google.topic)
@@ -153,6 +155,8 @@ async def root(google: GoogleAction):
     google_news.max_results = 30
     google_news.country = 'United Kingdom'
     results_dict = google_news.get_news_by_topic(google.topic)
+    for entry in results_dict:
+        entry["url"] = decode_google_news_url(entry.get("url", ""))
     google_topic_cache[google.topic] = results_dict
 
     return {"data": results_dict}
