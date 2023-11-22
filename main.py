@@ -23,7 +23,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from newspaper import Config
 from pydantic import BaseModel
 from GoogleNews import GoogleNews
-from gnews import GNews
+
 from newspaper import Article
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from nltk.stem import *
@@ -38,7 +38,11 @@ from classes.TextSummarizer import *
 from decouple import config
 from TikTokApi import TikTokApi
 
-pytrends = TrendReq(hl='en-GB', tz=360)
+from api.endpoints import feeds
+from api.endpoints import scrapper
+from api.endpoints import google
+
+
 stemmer = PorterStemmer()
 wordnet_lemmatizer = WordNetLemmatizer()
 nlp = spacy.load("en_core_web_md")
@@ -116,6 +120,11 @@ app.add_middleware(
     allow_credentials=True,
 )
 
+# Endpoints
+app.include_router(feeds.router)
+app.include_router(scrapper.router)
+app.include_router(google.router)
+
 
 # Related Functions
 def are_words_related(word1, word2):
@@ -140,28 +149,19 @@ async def get_hashtag_videos(token):
 cache = TTLCache(maxsize=500, ttl=6 * 60 * 60)
 
 
-class MyJSONEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, datetime):
-            return obj.isoformat()
-        return super(MyJSONEncoder, self).default(obj)
+
+
+class ArticleAction(BaseModel):
+    link: str
 
 
 class PostAction(BaseModel):
     query: str
 
 
-class FeedReader(BaseModel):
-    link: str
-
-
 class SeoAnalise(BaseModel):
     link: str
     format: str
-
-
-class GoogleNewsAction(BaseModel):
-    keyword: str
 
 
 class VideosAction(BaseModel):
@@ -176,11 +176,6 @@ class FindNewsAction(BaseModel):
 
 class TikTokAction(BaseModel):
     token: str
-
-
-class ScrapperAction(BaseModel):
-    network: str
-    what: str
 
 
 class BardAuth(BaseModel):
@@ -204,99 +199,13 @@ async def root():
     return {"data": "Welcome to the NLP API - for documentation please visit /docs for "}
 
 
-@app.get("/trending-terms")
-async def root():
-    newspaper_hot_trends = newspaper.hot()
-
-    trends = pytrends.realtime_trending_searches(pn='GB')['entityNames']
-
-    merged_trends = []
-    merged_trends.extend(newspaper_hot_trends)
-    merged_trends.extend(trends)
-
-    original_dict = {
-        "data": merged_trends,
-        "newspaper": newspaper_hot_trends,
-        "google": trends
-    }
-    unique_data_list = []
-
-    for item in original_dict["data"]:
-        if isinstance(item, list):
-            unique_data_list.extend(set(item))
-        else:
-            unique_data_list.append(item)
-    keywords = list(set(unique_data_list))
-
-    return {"data": keywords}
-
-
-# Introducing cache
-@app.post("/google-news")
-async def root(google: GoogleNewsAction):
-    keyword = google.keyword
-    cached_result = cache.get(keyword)
-    if cached_result:
-        return {"data": cached_result}
-    google_news = GNews()
-    resultsnew = google_news.get_news(keyword)
-    googlenews = GoogleNews(lang="en_gb", period='1d')
-    googlenews.search(keyword)
-    results = googlenews.results(sort=True)
-
-    # Convert the results to a Python dictionary
-    results_dict = json.loads(json.dumps(results, cls=MyJSONEncoder))
-    # Cache the result with the specified keyword
-    cache[keyword] = results_dict
-
-    return {"data": resultsnew}
-
-
-@app.post("/find-news")
-async def root(find: FindNewsAction):
-    cached_result = cache.get(find.topic)
-    if cached_result:
-        return {"data": cached_result}
-    google_news = GNews()
-    google_news.period = '1d'
-    google_news.max_results = 15
-    google_news.country = 'United Kingdom'
-    results_dict = google_news.get_news(find.topic)
-    cache[find.topic] = results_dict
-
-    return {"data": results_dict}
-
-
-@app.post("/feed-reader")
-async def root(feed: FeedReader):
-    response = feedparser.parse(feed.link)
-    return {"data": {
-        "feed-link": feed.link,
-        "response": {
-            "title": response.feed.get('title', ''),
-            "entries": response.entries
-        },
-
-    }}
-
-
-@app.post("/feed-finder")
-async def root(feed: FeedReader):
-    response = find_feeds(feed.link)
-    return {"data": {
-        "feed-link": feed.link,
-        "response": response,
-
-    }}
-
-
 @app.post("/article")
-async def root(feed: FeedReader):
+async def root(article: ArticleAction):
     user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) ' \
                  'Chrome/50.0.2661.102 Safari/537.36 '
     config = Config()
     config.browser_user_agent = user_agent
-    crawler = Article(feed.link, config=config, keep_article_html=True)
+    crawler = Article(article.link, config=config, keep_article_html=True)
     crawler.download()
     crawler.parse()
     # Basic NLP using NTLK
@@ -399,8 +308,8 @@ async def root(data: SeoAnalise):
 
 
 @app.post("/lighthouse")
-async def root(feed: FeedReader):
-    report = LighthouseRunner(feed.link, form_factor='desktop', quiet=False).report
+async def root(article: ArticleAction):
+    report = LighthouseRunner(article.link, form_factor='desktop', quiet=False).report
     return {"data": report}
 
 
@@ -415,17 +324,6 @@ async def root(post: VideosAction):
 async def tiktok(post: TikTokAction):
     results = await get_hashtag_videos(post.token)
     return {"data": results}
-
-
-@app.post("/run-scrapper")
-def run_cli(scrapper: ScrapperAction):
-    # Replace 'your_cli_command' with the actual command you want to run
-    result = subprocess.run(['./skrapper/skraper instagram /explore/tags/memes -t json'],
-                            capture_output=True, text=True, check=True)
-
-    # Access the output of the command
-    output = result.stdout
-    return {"data": output}
 
 
 if __name__ == "__main__":
