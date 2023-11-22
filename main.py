@@ -22,7 +22,7 @@ from fastapi.responses import PlainTextResponse
 from fastapi.middleware.cors import CORSMiddleware
 from newspaper import Config
 from pydantic import BaseModel
-from GoogleNews import GoogleNews
+
 
 from newspaper import Article
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
@@ -205,6 +205,10 @@ async def root(article: ArticleAction):
                  'Chrome/50.0.2661.102 Safari/537.36 '
     config = Config()
     config.browser_user_agent = user_agent
+    config.request_timeout = 10
+    config.fetch_images = True
+    config.memoize_articles = True
+    config.follow_meta_refresh = True
     crawler = Article(article.link, config=config, keep_article_html=True)
     crawler.download()
     crawler.parse()
@@ -226,7 +230,7 @@ async def root(article: ArticleAction):
     filtered_entities_unique = [ent for ent in filtered_entities if
                                 ent[1] not in unique_values and not unique_values.add(ent[1])]
 
-    social = socials.extract(feed.link).get_matches_per_platform()
+    social = socials.extract(article.link).get_matches_per_platform()
 
     return {
         "data": {

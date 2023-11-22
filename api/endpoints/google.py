@@ -1,17 +1,24 @@
 import json
 import newspaper
+import datetime as dt
+from datetime import datetime
+
 from fastapi import APIRouter, Path, Query, Depends
 from pydantic import BaseModel
 from cachetools import TTLCache
 from pytrends.request import TrendReq
 from gnews import GNews
-
+from GoogleNews import GoogleNews
 
 pytrends = TrendReq(hl='en-GB', tz=360)
 
 router = APIRouter()
 
-google_topic_cache = TTLCache(maxsize=1000, ttl=6 * 60 * 60)
+
+now = dt.date.today()
+now = now.strftime('%m-%d-%Y')
+yesterday = dt.date.today() - dt.timedelta(days=1)
+yesterday = yesterday.strftime('%m-%d-%Y')
 
 
 class GoogleAction(BaseModel):
@@ -67,34 +74,51 @@ async def root(cache: TTLCache = Depends(lambda: trending_terms_cache)):
 google_news_cache = TTLCache(maxsize=1000, ttl=6 * 60 * 60)
 
 
-@router.post("/google-news-word")
+def remove_unwanted_part(url):
+    # Remove the unwanted part of the URL
+    start_index = url.find("https://news.google.com/rss/articles/")
+    if start_index != -1:
+        return url[start_index:]
+    return url
+
+
+def remove_unwanted_characters(link):
+    # Find the index of "&ved=" in the link
+    index = link.find("&ved=")
+    if index != -1:
+        return link[:index]
+    return link
+
+
+@router.post("/google-news-search")
 async def root(google: GoogleAction):
     keyword = google.topic
     cached_result = google_news_cache.get(keyword)
     if cached_result:
         return {"data": cached_result}
     google_news = GNews()
-    total_results = google_news.get_news(keyword)
-    googlenews = GoogleNews(lang="en_gb", period='1d')
-    googlenews.search(keyword)
-    results = googlenews.results(sort=True)
-
-    results_dict = json.loads(json.dumps(results, cls=CustomJsonEncoder))
+    google_news.period = '1d'
+    google_news.max_results = 30
+    google_news.country = 'United Kingdom'
+    results_dict = google_news.get_news(keyword)
     google_news_cache[keyword] = results_dict
+    return {"data": results_dict}
 
-    return {"data": total_results}
+
+
+google_topic_cache = TTLCache(maxsize=1000, ttl=6 * 60 * 60)
 
 
 @router.post("/google-news-topic")
 async def root(google: GoogleAction):
-    cached_result = cache.get(google.topic)
+    cached_result = google_topic_cache.get(google.topic)
     if cached_result:
         return {"data": cached_result}
     google_news = GNews()
     google_news.period = '1d'
     google_news.max_results = 30
     google_news.country = 'United Kingdom'
-    results_dict = google_news.get_news(google.topic)
-    cache[google.topic] = results_dict
+    results_dict = google_news.get_news_by_topic(google.topic)
+    google_topic_cache[google.topic] = results_dict
 
     return {"data": results_dict}
