@@ -1,13 +1,9 @@
-import json
-
 import asyncio
-import os
 
 from fastapi import FastAPI
 from fastapi.responses import PlainTextResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-from threading import Lock
 
 from api.endpoints import feeds
 from api.endpoints import scrapper
