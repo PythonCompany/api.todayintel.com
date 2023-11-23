@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
-
+import feedparser
+from feedfinder2 import find_feeds
 router = APIRouter()
 
 
