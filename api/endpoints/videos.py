@@ -13,6 +13,13 @@ class TikTokAction(BaseModel):
     token: str
 
 
+async def get_hashtag_videos(token):
+    async with TikTokApi() as api:
+        await api.create_sessions(ms_tokens=token, num_sessions=1, sleep_after=3)
+        tag = api.hashtag(name="funny")
+        return tag.videos(count=30)
+
+
 @router.post("/videos")
 async def root(post: VideosAction):
     from youtube_search import YoutubeSearch
