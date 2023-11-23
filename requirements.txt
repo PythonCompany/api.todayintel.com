@@ -1,4 +1,5 @@
 email-validator~=2.0
+socid-extractor~=0.0.26
 TikTokApi~=6.1.1
 fastapi~=0.104.1
 html5lib~=1.1
