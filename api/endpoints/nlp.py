@@ -1,7 +1,7 @@
 
 import spacy
 import socials
-
+import socid_extractor
 
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from markdownify import markdownify as md
@@ -76,5 +76,6 @@ async def root(article: ArticleAction):
             "social": social,
             "spacy": displacy.render(doc, style="ent"),
             "sentiment": sentiment.polarity_scores(crawler.text),
+            'accounts': socid_extractor.extract(crawler.text)
         },
     }
