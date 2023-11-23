@@ -8,7 +8,6 @@ import base64
 import functools
 import re
 
-
 from datetime import datetime
 
 from fastapi import APIRouter, Path, Query, Depends
@@ -28,10 +27,6 @@ yesterday = dt.date.today() - dt.timedelta(days=1)
 yesterday = yesterday.strftime('%m-%d-%Y')
 
 
-
-
-
-
 class GoogleAction(BaseModel):
     topic: str = Query(None, alias="item-query",
                        title="The topic to extract the news from: WORLD, NATION, BUSINESS, TECHNOLOGY, "
@@ -48,7 +43,7 @@ class CustomJsonEncoder(json.JSONEncoder):
 trending_terms_cache = TTLCache(maxsize=1000, ttl=6 * 60 * 60)
 
 
-@router.get("/trending-terms")
+@router.get("/google/trending")
 async def root(cache: TTLCache = Depends(lambda: trending_terms_cache)):
     # Check if the data is already in the cache
     if "keywords" in cache:
@@ -81,6 +76,7 @@ async def root(cache: TTLCache = Depends(lambda: trending_terms_cache)):
 
     return {"data": keywords}
 
+
 # Start the cache for the Google News API
 google_news_cache = TTLCache(maxsize=1000, ttl=6 * 60 * 60)
 
@@ -110,7 +106,7 @@ def _decode_google_news_url(url: str) -> str:
     decoded_text = base64.urlsafe_b64decode(encoded_text)
 
     match = _DECODED_URL_RE.match(decoded_text)
-    print (match)
+    print(match)
 
     primary_url = match.groupdict()["primary_url"]  # type: ignore
     primary_url = primary_url.decode()
@@ -121,7 +117,7 @@ def decode_google_news_url(url: str) -> str:
     return _decode_google_news_url(url) if url.startswith(_ENCODED_URL_PREFIX) else url
 
 
-@router.post("/google-news-search")
+@router.post("/google/news/search")
 async def root(google: GoogleAction):
     keyword = google.topic
     cached_result = google_news_cache.get(keyword)
@@ -144,8 +140,9 @@ async def root(google: GoogleAction):
 
 google_topic_cache = TTLCache(maxsize=1000, ttl=6 * 60 * 60)
 
+
 # Topics available: WORLD, NATION, BUSINESS, TECHNOLOGY, ENTERTAINMENT, SPORTS, SCIENCE, HEALTH.
-@router.post("/google-news-topic")
+@router.post("/google/news/topic")
 async def root(google: GoogleAction):
     cached_result = google_topic_cache.get(google.topic)
     if cached_result:

@@ -8,7 +8,7 @@ class FeedReader(BaseModel):
     link: str
 
 
-@router.post("/feed-reader")
+@router.post("/feed/reader")
 async def root(feed: FeedReader):
     response = feedparser.parse(feed.link)
     return {"data": {
@@ -21,11 +21,10 @@ async def root(feed: FeedReader):
     }}
 
 
-@router.post("/feed-finder")
+@router.post("/feed/finder")
 async def root(feed: FeedReader):
     response = find_feeds(feed.link)
     return {"data": {
         "feed-link": feed.link,
         "response": response,
-
     }}
