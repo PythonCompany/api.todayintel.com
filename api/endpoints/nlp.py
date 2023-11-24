@@ -1,4 +1,3 @@
-
 import spacy
 import socials
 import socid_extractor
@@ -16,15 +15,16 @@ from spacy.lang.en import English
 
 router = APIRouter()
 
-
 nlp = spacy.load("en_core_web_md")
 
 
 class ArticleAction(BaseModel):
     link: str
 
+
 class SummarizeAction(BaseModel):
     text: str
+
 
 @router.post("/nlp/article")
 async def root(article: ArticleAction):
@@ -46,7 +46,8 @@ async def root(article: ArticleAction):
 
     sentiment = SentimentIntensityAnalyzer()
 
-    remove_entities = ["TIME", "DATE", "CARDINAL", "LANGUAGE", "PERCENT", "MONEY", "QUANTITY", "ORDINAL", "CARDINAL"]
+    remove_entities = ["TIME", "DATE", "LANGUAGE", "PERCENT", "MONEY", "QUANTITY", "ORDINAL",
+                       "CARDINAL"]
 
     entities = [(e.label_, e.text, e.start_char, e.end_char) for e in doc.ents]
 
@@ -58,6 +59,18 @@ async def root(article: ArticleAction):
                                 ent[1] not in unique_values and not unique_values.add(ent[1])]
 
     social = socials.extract(article.link).get_matches_per_platform()
+
+    # List of entities to remove from the rendered HTML
+    entities_to_remove = ["TIME", "DATE", "LANGUAGE", "PERCENT", "MONEY", "QUANTITY", "ORDINAL",
+                          "CARDINAL"]
+
+    # ...
+
+    # Filter out entities to be removed
+    filtered_entities_unique = [ent for ent in filtered_entities_unique if ent[1] not in entities_to_remove]
+
+    # Render HTML with filtered entities
+    spacy_html = displacy.render(doc, style="ent", options={"ents": [ent[0] for ent in filtered_entities_unique]})
 
     return {
         "data": {
@@ -74,7 +87,8 @@ async def root(article: ArticleAction):
             "entities": filtered_entities_unique,
             "videos": crawler.movies,
             "social": social,
-            "spacy": displacy.render(doc, style="ent"),
+            "spacy": spacy_html,
+            "spacy_markdown": md(spacy_html, newline_style="BACKSLASH", strip=['a'],heading_style="ATX"),
             "sentiment": sentiment.polarity_scores(crawler.text),
             'accounts': socid_extractor.extract(crawler.text)
         },
