@@ -3,7 +3,7 @@ version: '3'
 services:
   nlp:
     build: .
-    image: cornatul/nlp:v1
+    image: cornatul/api.todayintel.com:v1
     container_name: nlp
     restart: always
     ports:

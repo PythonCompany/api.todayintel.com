@@ -32,4 +32,11 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            cornatul/nlp:v1
+            cornatul/api.todayintel.com:v1
+      - name: Get README Content
+        id: readme
+        run: echo "::set-output name=content::$(cat README.md)"
+      - name: Update Docker Hub Description
+        run: |
+          echo '{"full_description": "'"${{ steps.readme.outputs.content }}"'"}' > description.json
+          curl -X PATCH -H "Content-Type: application/json" -H "Authorization: Bearer ${{ secrets.DOCKERHUB_TOKEN }}" -d @description.json https://hub.docker.com/v2/repositories/$DOCKER_USERNAME/your-image-name/
