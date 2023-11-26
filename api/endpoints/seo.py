@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from cachetools import TTLCache
 import os
 from seoanalyzer import analyze
+from lighthouse import LighthouseRunner
 
 router = APIRouter()
 
@@ -35,5 +36,5 @@ async def root(data: SeoAnalise):
 
 @router.post("/seo/lighthouse")
 async def root(action: LightHouseAction):
-    report = LighthouseRunner(action.link, form_factor='mobile', quiet=False, additional_settings=[]).report
+    report = LighthouseRunner(action.link, form_factor='desktop', quiet=False, additional_settings=[]).report
     return {"data": report}
