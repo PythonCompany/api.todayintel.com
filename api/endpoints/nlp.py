@@ -72,6 +72,9 @@ async def root(article: ArticleAction):
     # Render HTML with filtered entities
     spacy_html = displacy.render(doc, style="ent", options={"ents": [ent[0] for ent in filtered_entities_unique]})
 
+    import socialshares
+    counts = socialshares.fetch(url, ['facebook', 'pinterest', 'linkedin', 'google', 'reddit'])
+
     return {
         "data": {
             "title": crawler.title,
@@ -90,6 +93,7 @@ async def root(article: ArticleAction):
             "spacy": spacy_html,
             "spacy_markdown": md(spacy_html, newline_style="BACKSLASH", strip=['a'],heading_style="ATX"),
             "sentiment": sentiment.polarity_scores(crawler.text),
-            'accounts': socid_extractor.extract(crawler.text)
+            'accounts': socid_extractor.extract(crawler.text),
+            'social-shares': counts
         },
     }

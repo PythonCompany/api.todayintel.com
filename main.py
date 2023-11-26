@@ -18,7 +18,7 @@ app = FastAPI(
     version="1.1",
     terms_of_service="https://todayintel.com/terms/",
     contact={
-        "name": "Stefan Laravel Developer",
+        "name": "@The Laravel Developer",
         "url": "https://LzoMedia.com/",
         "email": "stefan@LzoMedia.com",
     },
@@ -47,7 +47,7 @@ app.include_router(videos.router)
 
 @app.get("/")
 async def root():
-    return {"data": "Welcome to the NLP API - for documentation please visit /docs for "}
+    return {"data": "Welcome to the Today Intel API - for documentation please visit /docs "}
 
 
 if __name__ == "__main__":

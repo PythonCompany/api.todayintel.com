@@ -1,6 +1,9 @@
 from fastapi import APIRouter, Path, Query, Depends
 from pydantic import BaseModel
 from cachetools import TTLCache
+import os
+from seoanalyzer import analyze
+
 router = APIRouter()
 
 
