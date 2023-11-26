@@ -16,7 +16,7 @@ services:
       - "8080:8080"
 
   nlp:
-    image: cornatul/nlp:v1
+    image: cornatul/api.todayintel.com:v1
     container_name: nlp
     restart: always
     deploy:
