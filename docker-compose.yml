@@ -1,7 +1,7 @@
 version: '3'
 
 services:
-  nlp:
+  api.todayintel.com:
     build: .
     image: cornatul/api.todayintel.com:v1
     container_name: nlp
