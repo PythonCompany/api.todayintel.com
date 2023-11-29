@@ -73,7 +73,7 @@ async def root(article: ArticleAction):
     spacy_html = displacy.render(doc, style="ent", options={"ents": [ent[0] for ent in filtered_entities_unique]})
 
     import socialshares
-    counts = socialshares.fetch(url, ['facebook', 'pinterest', 'linkedin', 'google', 'reddit'])
+    counts = socialshares.fetch(article.link, ['facebook', 'pinterest', 'linkedin', 'google', 'reddit'])
 
     return {
         "data": {
