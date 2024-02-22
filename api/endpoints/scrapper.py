@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
-
+import subprocess
 router = APIRouter()
 
 
@@ -11,7 +11,7 @@ class ScrapperAction(BaseModel):
 
 @router.post("/run/scrapper")
 def run_cli(scrapper: ScrapperAction):
-    result = subprocess.run(['./skrapper/skraper ' + scrapper.network + ' ' + scrapper.what + ' -t json'],
+    result = subprocess.run(['/app/skrapper/skraper ' + scrapper.network + ' ' + scrapper.what + ' -t json'],
                             capture_output=True, text=True, check=True)
 
     # Access the output of the command

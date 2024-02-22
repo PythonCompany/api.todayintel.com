@@ -6,10 +6,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 
 from api.endpoints import feeds
-from api.endpoints import scrapper
 from api.endpoints import google
 from api.endpoints import seo
 from api.endpoints import videos
+from api.endpoints import testing
 from api.endpoints import nlp as nlp_endpoint
 
 app = FastAPI(
@@ -38,12 +38,11 @@ app.add_middleware(
 
 # Endpoints
 app.include_router(feeds.router)
-app.include_router(scrapper.router)
 app.include_router(google.router)
 app.include_router(seo.router)
 app.include_router(nlp_endpoint.router)
 app.include_router(videos.router)
-
+app.include_router(testing.router)
 
 @app.get("/")
 async def root():
