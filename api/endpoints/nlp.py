@@ -1,4 +1,5 @@
 import spacy
+import yake
 import socials
 import socid_extractor
 
@@ -96,4 +97,16 @@ async def root(article: ArticleAction):
             'accounts': socid_extractor.extract(crawler.text),
             'social-shares': counts
         },
+    }
+
+
+@router.post("/nlp/tags")
+async def root(article: SummarizeAction):
+    text = article.text
+    language = "en"
+    max_ngram_size = 3
+    deduplication_threshold = 0.9
+    custom_kw_extractor = yake.KeywordExtractor(lan=language, n=max_ngram_size, dedupLim=deduplication_threshold,top=5, features=None)
+    return {
+        "data": custom_kw_extractor.extract_keywords(text)
     }

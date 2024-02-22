@@ -45,6 +45,7 @@ COPY . .
 
 
 # Install some other packages and download the models
+RUN su -c "pip3 install yake"
 RUN su -c "pip3 install uvicorn"
 RUN su -c "pip3 install gnews"
 RUN su -c "python3 -m nltk.downloader -d /usr/local/share/nltk_data wordnet"
