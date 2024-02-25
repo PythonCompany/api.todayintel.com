@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.responses import PlainTextResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-
+from api.endpoints import socialgenerator
 from api.endpoints import feeds
 from api.endpoints import google
 from api.endpoints import seo
@@ -15,10 +15,10 @@ from api.endpoints import nlp as nlp_endpoint
 app = FastAPI(
     title="Today Intel",
     description="This is the api behind the Today Intel app.",
-    version="1.1",
-    terms_of_service="https://todayintel.com/terms/",
+    version="0.5",
+    terms_of_service="https://lzomedia.com/terms/",
     contact={
-        "name": "@The Laravel Developer",
+        "name": "Lzo Media",
         "url": "https://LzoMedia.com/",
         "email": "stefan@LzoMedia.com",
     },
@@ -43,10 +43,11 @@ app.include_router(seo.router)
 app.include_router(nlp_endpoint.router)
 app.include_router(videos.router)
 app.include_router(testing.router)
+app.include_router(socialgenerator.router)
 
 @app.get("/")
 async def root():
-    return {"data": "Welcome to the Today Intel API - for documentation please visit /docs "}
+    return {"data": "Documentation is located at /docs "}
 
 
 if __name__ == "__main__":

@@ -2,6 +2,7 @@ import json
 import base64
 import newspaper
 import datetime as dt
+import sqlite3
 
 """Decode encoded Google News entry URLs."""
 import base64
@@ -25,6 +26,22 @@ now = dt.date.today()
 now = now.strftime('%m-%d-%Y')
 yesterday = dt.date.today() - dt.timedelta(days=1)
 yesterday = yesterday.strftime('%m-%d-%Y')
+
+
+
+#Database Logic
+# Assuming you have a SQLite database file named 'keywords.db'
+conn = sqlite3.connect('keywords.db')
+cursor = conn.cursor()
+
+# Create a table to store keywords and their appearance count if it doesn't exist already
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS keywords (
+        keyword TEXT PRIMARY KEY,
+        appearances INTEGER DEFAULT 1
+    )
+''')
+conn.commit()
 
 
 class GoogleAction(BaseModel):
@@ -71,10 +88,31 @@ async def root(cache: TTLCache = Depends(lambda: trending_terms_cache)):
 
     keywords = list(set(unique_data_list))
 
-    # Store the keywords in the cache
-    cache["keywords"] = keywords
+    # Increment appearance count in the database and update cache
+    for keyword in keywords:
+        cursor.execute('''
+            INSERT OR IGNORE INTO keywords (keyword) VALUES (?)
+        ''', (keyword,))
+        cursor.execute('''
+            UPDATE keywords SET appearances = appearances + 1 WHERE keyword = ?
+        ''', (keyword,))
+    conn.commit()
 
-    return {"data": keywords}
+    # Retrieve updated keywords and appearances from the database
+    cursor.execute('''
+        SELECT keyword, appearances FROM keywords
+    ''')
+    keyword_appearances = {row[0]: row[1] for row in cursor.fetchall()}
+
+    # Store the updated keywords in the cache
+    updated_keywords = list(keyword_appearances.keys())
+    cache["keywords"] = updated_keywords
+
+    # Prepare response with keywords and their appearances
+    response_data = [{"keyword": keyword, "appearances": keyword_appearances[keyword]} for keyword in updated_keywords]
+
+    return {"data": response_data}
+
 
 
 # Start the cache for the Google News API
