@@ -3,14 +3,9 @@ import base64
 import newspaper
 import datetime as dt
 import sqlite3
-
-"""Decode encoded Google News entry URLs."""
-import base64
 import functools
 import re
-
 from datetime import datetime
-
 from fastapi import APIRouter, Path, Query, Depends
 from pydantic import BaseModel
 from cachetools import TTLCache
@@ -27,8 +22,6 @@ now = now.strftime('%m-%d-%Y')
 yesterday = dt.date.today() - dt.timedelta(days=1)
 yesterday = yesterday.strftime('%m-%d-%Y')
 
-
-
 #Database Logic
 # Assuming you have a SQLite database file named 'keywords.db'
 conn = sqlite3.connect('keywords.db')
@@ -38,11 +31,12 @@ cursor = conn.cursor()
 cursor.execute('''
     CREATE TABLE IF NOT EXISTS keywords (
         keyword TEXT PRIMARY KEY,
-        appearances INTEGER DEFAULT 1
+        appearances INTEGER DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
 ''')
 conn.commit()
-
 
 class GoogleAction(BaseModel):
     topic: str = Query(None, alias="item-query",
@@ -56,9 +50,7 @@ class CustomJsonEncoder(json.JSONEncoder):
             return obj.isoformat()
         return super(MyJSONEncoder, self).default(obj)
 
-
 trending_terms_cache = TTLCache(maxsize=1000, ttl=6 * 60 * 60)
-
 
 @router.get("/google/trending")
 async def root(cache: TTLCache = Depends(lambda: trending_terms_cache)):
@@ -89,52 +81,38 @@ async def root(cache: TTLCache = Depends(lambda: trending_terms_cache)):
     keywords = list(set(unique_data_list))
 
     # Increment appearance count in the database and update cache
+    current_time = dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     for keyword in keywords:
         cursor.execute('''
-            INSERT OR IGNORE INTO keywords (keyword) VALUES (?)
-        ''', (keyword,))
+            INSERT OR IGNORE INTO keywords (keyword, created_at, updated_at) VALUES (?, ?, ?)
+        ''', (keyword, current_time, current_time))
         cursor.execute('''
-            UPDATE keywords SET appearances = appearances + 1 WHERE keyword = ?
-        ''', (keyword,))
+            UPDATE keywords SET appearances = appearances + 1, updated_at = ? WHERE keyword = ?
+        ''', (current_time, keyword))
     conn.commit()
 
     # Retrieve updated keywords and appearances from the database
     cursor.execute('''
-        SELECT keyword, appearances FROM keywords
+        SELECT keyword, appearances, created_at, updated_at FROM keywords
     ''')
-    keyword_appearances = {row[0]: row[1] for row in cursor.fetchall()}
+    keyword_info = cursor.fetchall()
+    # Prepare response with keywords, their appearances, created_at, and updated_at
+    response_data = [{"keyword": info[0], "appearances": info[1], "created_at": info[2], "updated_at": info[3]} for info in keyword_info]
 
     # Store the updated keywords in the cache
-    updated_keywords = list(keyword_appearances.keys())
+    updated_keywords = [info[0] for info in keyword_info]
     cache["keywords"] = updated_keywords
-
-    # Prepare response with keywords and their appearances
-    response_data = [{"keyword": keyword, "appearances": keyword_appearances[keyword]} for keyword in updated_keywords]
 
     return {"data": response_data}
 
-
-
 # Start the cache for the Google News API
 google_news_cache = TTLCache(maxsize=1000, ttl=6 * 60 * 60)
-
-
-def remove_unwanted_part(url):
-    # Remove the unwanted part of the URL
-    start_index = url.find("https://news.google.com/rss/articles/")
-    if start_index != -1:
-        return url[start_index:]
-    return url
-
-
-# Ref: https://stackoverflow.com/a/59023463/
 
 _ENCODED_URL_PREFIX = "https://news.google.com/rss/articles/"
 _ENCODED_URL_PREFIX_WITH_CONSENT = "https://consent.google.com/m?continue=https://news.google.com/rss/articles/"
 _ENCODED_URL_RE = re.compile(fr"^{re.escape(_ENCODED_URL_PREFIX_WITH_CONSENT)}(?P<encoded_url>[^?]+)")
 _ENCODED_URL_RE = re.compile(fr"^{re.escape(_ENCODED_URL_PREFIX)}(?P<encoded_url>[^?]+)")
 _DECODED_URL_RE = re.compile(rb'^\x08\x13".+?(?P<primary_url>http[^\xd2]+)\xd2\x01')
-
 
 @functools.lru_cache(2048)
 def _decode_google_news_url(url: str) -> str:
@@ -144,16 +122,12 @@ def _decode_google_news_url(url: str) -> str:
     decoded_text = base64.urlsafe_b64decode(encoded_text)
 
     match = _DECODED_URL_RE.match(decoded_text)
-    print(match)
-
     primary_url = match.groupdict()["primary_url"]  # type: ignore
     primary_url = primary_url.decode()
     return primary_url
 
-
 def decode_google_news_url(url: str) -> str:
     return _decode_google_news_url(url) if url.startswith(_ENCODED_URL_PREFIX) else url
-
 
 @router.post("/google/news/search")
 async def root(google: GoogleAction):
@@ -175,9 +149,7 @@ async def root(google: GoogleAction):
     google_news_cache[keyword] = results_dict
     return {"data": results_dict}
 
-
 google_topic_cache = TTLCache(maxsize=1000, ttl=6 * 60 * 60)
-
 
 # Topics available: WORLD, NATION, BUSINESS, TECHNOLOGY, ENTERTAINMENT, SPORTS, SCIENCE, HEALTH.
 @router.post("/google/news/topic")
