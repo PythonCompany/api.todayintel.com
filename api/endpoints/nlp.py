@@ -3,6 +3,7 @@ import yake
 import socials
 import socid_extractor
 
+
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from markdownify import markdownify as md
 
@@ -76,6 +77,14 @@ async def root(article: ArticleAction):
     import socialshares
     counts = socialshares.fetch(article.link, ['facebook', 'pinterest', 'linkedin', 'google', 'reddit'])
 
+    text = crawler.text
+    language = "en"
+    max_ngram_size = 1
+    deduplication_threshold = 0.9
+    custom_kw_extractor = yake.KeywordExtractor(lan=language, n=max_ngram_size, dedupLim=deduplication_threshold, top=5,
+                                                features=None)
+
+    sorted_keyword = sorted_keywords = sorted(custom_kw_extractor.extract_keywords(text), key=lambda x: x[1], reverse=False)
     return {
         "data": {
             "title": crawler.title,
@@ -84,7 +93,7 @@ async def root(article: ArticleAction):
             "markdown": md(crawler.article_html, newline_style="BACKSLASH", strip=['a'], heading_style="ATX"),
             "html": crawler.article_html,
             "summary": crawler.summary,
-            "keywords": crawler.keywords,
+            "keywords":sorted_keywords,
             "authors": crawler.authors,
             "banner": crawler.top_image,
             "images": crawler.images,
