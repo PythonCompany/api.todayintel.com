@@ -50,7 +50,7 @@ class CustomJsonEncoder(json.JSONEncoder):
             return obj.isoformat()
         return super(MyJSONEncoder, self).default(obj)
 
-trending_terms_cache = TTLCache(maxsize=1000, ttl=6 * 60 * 60)
+trending_terms_cache = TTLCache(maxsize=5000, ttl=6 * 60 * 60)
 
 @router.get("/google/trending")
 async def root(cache: TTLCache = Depends(lambda: trending_terms_cache)):
@@ -99,9 +99,7 @@ async def root(cache: TTLCache = Depends(lambda: trending_terms_cache)):
     # Prepare response with keywords, their appearances, created_at, and updated_at
     response_data = [{"keyword": info[0], "appearances": info[1], "created_at": info[2], "updated_at": info[3]} for info in keyword_info]
 
-    # Store the updated keywords in the cache
-    updated_keywords = [info[0] for info in keyword_info]
-    cache["keywords"] = updated_keywords
+    cache["keywords"] = response_data
 
     return {"data": response_data}
 
