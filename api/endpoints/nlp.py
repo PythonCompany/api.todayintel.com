@@ -41,8 +41,7 @@ async def root(article: ArticleAction):
     crawler = Article(article.link, config=config, keep_article_html=True)
     crawler.download()
     crawler.parse()
-    # Basic NLP using NTLK
-    crawler.nlp()
+
     # New NLP
     doc = nlp(crawler.text)
 

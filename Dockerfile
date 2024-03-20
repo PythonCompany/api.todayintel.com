@@ -1,4 +1,4 @@
-FROM python:3.10
+FROM python:3.11
 LABEL maintainer="Stefan <stefan@lzomedia.com>"
 RUN apt update
 RUN apt install curl -y
@@ -13,6 +13,8 @@ RUN apt install net-tools -y
 #RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | bash
 
 RUN pip install --upgrade pip
+RUN su -c "pip3 install jobspy"
+RUN su -c "pip3 install tls_client"
 RUN apt install software-properties-common -y
 RUN apt install openjdk-17-jdk -y
 RUN java --version
@@ -46,6 +48,7 @@ COPY . .
 
 # Install some other packages and download the models
 RUN su -c "pip3 install yake"
+RUN su -c "pip3 install tls_client"
 RUN su -c "pip3 install uvicorn"
 RUN su -c "pip3 install gnews"
 

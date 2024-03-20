@@ -1,7 +1,6 @@
 import asyncio
 
 from fastapi import FastAPI
-from fastapi.responses import PlainTextResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.endpoints import socialgenerator
@@ -10,11 +9,12 @@ from api.endpoints import google
 from api.endpoints import seo
 from api.endpoints import videos
 from api.endpoints import testing
+from api.endpoints import jobs
 from api.endpoints import nlp as nlp_endpoint
 
 app = FastAPI(
     title="Today Intel",
-    description="This is the api behind the Today Intel app.",
+    description="This is the api behind todayintel.com",
     version="0.5",
     terms_of_service="https://lzomedia.com/terms/",
     contact={
@@ -44,6 +44,7 @@ app.include_router(nlp_endpoint.router)
 app.include_router(videos.router)
 app.include_router(testing.router)
 app.include_router(socialgenerator.router)
+app.include_router(jobs.router)
 
 @app.get("/")
 async def root():
@@ -53,4 +54,4 @@ async def root():
 if __name__ == "__main__":
     # Create and run the event loop
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(tiktok())
+    loop.run_until_complete()
