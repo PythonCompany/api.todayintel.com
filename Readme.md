@@ -34,6 +34,7 @@ For more details, refer to the [Terms of Service](https://todayintel.com/terms/)
 - **POST /feed/reader:** Fetch news feed.
 - **POST /feed/finder:** Find relevant feeds.
 - **POST /run/scrapper:** Run a web scraper.
+- **POST /jobs:** Searches fo jobs.
 - **GET /google/trending:** Get trending Google searches.
 - **POST /google/news/search:** Search Google News.
 - **POST /google/news/topic:** Get news on a specific topic.
