@@ -32,10 +32,10 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            cornatul/api.todayintel.com:v1
+            todayintel/api.todayintel.com:v1
       - name: Get README Content
         id: readme
-        run: echo "::set-output name=content::$(cat README.md)"
+        run: echo "::set-output name=content::$(cat Readme.md)"
       - name: Update Docker Hub Description
         run: |
           echo '{"full_description": "'"${{ steps.readme.outputs.content }}"'"}' > description.json
