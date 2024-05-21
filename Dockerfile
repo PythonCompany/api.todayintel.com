@@ -34,7 +34,7 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
 #LightHouse
 
 RUN su -c "apt install chromium -y"
-RUN su -c "pip3 install git+https://github.com/Cornatul/lighthouse-python.git#egg=lighthouse"
+RUN su -c "pip3 install lighthouse-python-plus"
 
 
 
@@ -47,6 +47,7 @@ COPY . .
 
 
 # Install some other packages and download the models
+RUN su -c "pip3 install instabot"
 RUN su -c "pip3 install yake"
 RUN su -c "pip3 install tls_client"
 RUN su -c "pip3 install uvicorn"
