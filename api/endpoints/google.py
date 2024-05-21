@@ -22,7 +22,6 @@ now = now.strftime('%m-%d-%Y')
 yesterday = dt.date.today() - dt.timedelta(days=1)
 yesterday = yesterday.strftime('%m-%d-%Y')
 
-#Database Logic
 # Assuming you have a SQLite database file named 'keywords.db'
 conn = sqlite3.connect('keywords.db')
 cursor = conn.cursor()
